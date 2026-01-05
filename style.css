@@ -1,0 +1,703 @@
+:root {
+  --bg: #f5f5f7;
+  --panel: #ffffff;
+  --border: #d9d9de;
+  --text: #111;
+  --muted: #808080;
+  --accent: #ff498f;
+  --accent2: #bd2b63;
+  --shadow: 0 6px 18px rgba(0, 0, 0, 0.08);
+  --radius: 14px;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto,
+    "Apple SD Gothic Neo", "Noto Sans KR", Arial, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+header {
+  height: 150px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  /* padding: 0 18px; */
+  border-bottom: 1px solid var(--border);
+  background: #fff;
+  /* position: sticky; */
+  top: 0;
+  z-index: 5;
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-weight: 900;
+  letter-spacing: -0.3px;
+}
+
+.brand .tag {
+  font-size: 12px;
+  color: var(--muted);
+  font-weight: 700;
+  border: 1px solid var(--border);
+  padding: 3px 8px;
+  border-radius: 999px;
+}
+
+.top-actions {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  align-items: center;
+  border-bottom: 1px solid var(--border);
+}
+
+.top-actions h3 {
+  margin-left: 10px;
+}
+
+button {
+  border: 1px solid var(--border);
+  background: #fff;
+  padding: 9px 12px;
+  border-radius: 10px;
+  cursor: pointer;
+  font-weight: 700;
+}
+
+button:hover {
+  filter: brightness(0.9);
+}
+
+button.primary {
+  border-color: transparent;
+  background: var(--accent);
+  color: #fff;
+}
+
+button.primary:hover {
+  background: var(--accent2);
+}
+
+button.ghost1 {
+  background: #fff;
+  margin-right: 2%;
+  padding: 5px 10px;
+}
+
+button.ghost {
+  background: #fff;
+}
+
+main {
+  padding: 16px;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.layout {
+  display: grid;
+  grid-template-columns: 320px 1fr 320px;
+  gap: 14px;
+  align-items: stretch;
+  min-height: calc(100vh - 64px - 32px);
+  height: 100%;
+  min-height: 0;
+}
+
+.panel {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  min-height: 200px;
+}
+
+.panel h3 {
+  margin: 0;
+  padding: 14px 14px 10px;
+  font-size: 14px;
+  letter-spacing: -0.4px;
+}
+
+.panel .content {
+  padding: 12px 14px;
+  overflow: auto;
+  flex: 1;
+}
+
+/* History table */
+table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 15px;
+}
+
+thead th {
+  position: sticky;
+  top: 0;
+  background: #fff;
+  border-bottom: 1px solid var(--border);
+  padding: 8px 6px;
+  text-align: left;
+  color: #333;
+  z-index: 1;
+}
+
+tbody td {
+  border-bottom: 1px solid #eee;
+  padding: 8px 6px;
+  vertical-align: top;
+  color: #222;
+}
+
+.muted {
+  color: var(--muted);
+}
+
+.badge {
+  display: inline-block;
+  font-size: 11px;
+  padding: 2px 7px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  color: #333;
+  background: #fafafa;
+}
+
+/* ===== History panel table: no horizontal scroll, wrap rows ===== */
+.history-panel .content {
+  overflow-x: hidden; /* ✅ 횡스크롤 제거 */
+  overflow-y: auto; /* ✅ 세로 스크롤은 유지 */
+}
+
+.history-panel table {
+  width: fit-content; /* ✅ 내용만큼만 */
+  max-width: 100%; /* ✅ 패널 밖으로는 못 나가게 */
+  display: inline-table; /* ✅ 100% 늘어나는 것 방지 */
+  table-layout: fixed; /* ✅ 셀에서 줄바꿈이 잘 일어나게 */
+}
+
+/* ✅ 길어지면 줄바꿈 → 그만큼 tr 높이 자동 증가 */
+.history-panel th,
+.history-panel td {
+  white-space: normal;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+/* ✅ “번호” 열이 너무 넓어지는 걸 막고, 길면 아래로 떨어지게 */
+.history-panel th:nth-child(2),
+.history-panel td:nth-child(2) {
+  width: 210px; /* 원하는 “지정 길이”로 조절 가능 */
+  max-width: 220px;
+}
+
+/* 기록 패널: 당첨 번호 강조 */
+.num-win {
+  color: #d30000;
+  font-weight: 900;
+}
+
+/* Center area */
+.center-top {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  align-items: center;
+  margin-bottom: 10px;
+}
+
+.input {
+  flex: 1;
+  min-width: 220px;
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+input[type="text"],
+input[type="number"] {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  outline: none;
+  font-weight: 700;
+}
+
+input[type="text"]:focus,
+input[type="number"]:focus {
+  border-color: #bfbfc6;
+  box-shadow: 0 0 0 3px rgba(0, 0, 0, 0.04);
+}
+
+.status {
+  font-size: 12px;
+  color: var(--muted);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.status strong {
+  color: #111;
+}
+
+.grid-wrap {
+  background: #fff;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 14px;
+  box-shadow: var(--shadow);
+
+  /* ✅ 핵심: 스크롤이 “생길 수 있게” 높이 계산 허용 */
+  flex: 1;
+  min-height: 0;
+
+  /* ✅ 스크롤 */
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(10, minmax(150px, 1fr));
+  gap: 14px;
+}
+
+.kuji {
+  aspect-ratio: 3 / 2;
+  border-radius: 12px;
+  /* border: 1px solid #cfcfd6; */
+  border: none;
+  background-image: url("./images/kuji-under.png");
+  background-size: contain;
+  background-repeat: no-repeat;
+  background-position: center;
+  /* background: linear-gradient(180deg, #ff80b0, #f85392); */
+  /* box-shadow: 0 3px 10px rgba(0, 0, 0, 0.1); */
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  user-select: none;
+}
+
+.kuji::after {
+  font-weight: 900;
+  color: rgba(255, 255, 255, 0.92);
+  letter-spacing: -0.2px;
+  font-size: 12px;
+}
+
+.kuji.opened {
+  background: #979797;
+  border: 1px solid #cfcfd6;
+  border-style: dashed;
+  cursor: not-allowed;
+}
+
+.kuji.opened::after {
+  content: attr(data-reveal);
+  color: #5c5c5c;
+  font-size: 22px;
+  font-weight: 800;
+}
+
+.kuji.opened .sub {
+  position: absolute;
+  bottom: 7px;
+  left: 0;
+  right: 0;
+  text-align: center;
+  font-size: 10px;
+  color: #666;
+  font-weight: 800;
+}
+
+/* Prize list */
+.prize-item {
+  border: 1px solid #eee;
+  border-radius: 12px;
+  padding: 10px 10px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+.prize-item .name {
+  font-weight: 900;
+  font-size: 12px;
+  line-height: 1.2;
+}
+
+.prize-item .count {
+  font-size: 12px;
+  color: #333;
+  font-weight: 900;
+}
+
+.prize-item .mini {
+  font-size: 11px;
+  color: var(--muted);
+  font-weight: 700;
+}
+
+/* Settings modal */
+.modal.hidden {
+  display: none;
+}
+
+.modal {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 18px;
+  z-index: 9999;
+}
+
+.modal-card {
+  width: min(720px, 100%);
+  background: #fff;
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  max-height: 90vh;
+}
+
+.modal-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 14px 10px;
+  border-bottom: 1px solid var(--border);
+}
+
+.modal-head h3 {
+  margin-left: 10px;
+}
+
+.modal-body {
+  padding: 12px 14px 14px;
+  overflow: auto;
+}
+
+.lbl {
+  display: block;
+  font-size: 12px;
+  margin: 10px 0 6px;
+  color: var(--muted);
+}
+
+.ta {
+  width: 100%;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 10px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
+    "Liberation Mono", monospace;
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+.modal-actions {
+  display: flex;
+  justify-content: center;
+  margin: 10px 0px;
+}
+
+/* ===== Config UI (settings modal) ===== */
+.hidden {
+  display: none !important;
+}
+
+.cfg-grid {
+  display: grid;
+  /* grid-template-columns: 1fr 1fr; */
+  gap: 12px;
+}
+
+.cfg-block {
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 12px;
+  background: #fafafa;
+}
+
+.cfg-title {
+  font-weight: 900;
+  font-size: 13px;
+  margin-bottom: 10px;
+}
+
+.cfg-row {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.cfg-row input[type="number"] {
+  padding: 8px 10px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  font-weight: 800;
+  width: 100%;
+}
+
+/* .pool-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding-top: 6px;
+}
+
+.pool-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 8px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: #fff;
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.pool-chip button {
+  padding: 2px 6px;
+  border-radius: 999px;
+  font-size: 11px;
+} */
+
+.prize-editor {
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  overflow: hidden;
+  background: #fff;
+}
+
+.prize-head,
+.prize-row {
+  display: grid;
+  grid-template-columns: 80px 1fr 80px 56px;
+  gap: 8px;
+  align-items: center;
+  padding: 8px 10px;
+}
+
+.prize-head {
+  font-size: 12px;
+  font-weight: 900;
+  background: #f3f3f6;
+  border-bottom: 1px solid var(--border);
+}
+
+.prize-row input[type="number"],
+.prize-row input[type="text"] {
+  padding: 8px 10px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  font-weight: 800;
+  width: 100%;
+}
+
+.prize-row .btn-del {
+  padding: 7px 10px;
+}
+
+/* mobile: settings columns */
+@media (max-width: 900px) {
+  .cfg-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ===== SOLD OUT badge on prize list ===== */
+.prize-item {
+  position: relative;
+}
+
+.prize-item.soldout {
+  opacity: 0.7;
+  background-color: #b3b3b3;
+}
+
+.soldout-badge {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  border: 2px solid #ff0000;
+  color: #ff0000;
+  background: #fff;
+  font-weight: 1000;
+  font-size: 11px;
+  padding: 3px 8px;
+  border-radius: 999px;
+  transform: rotate(-8deg);
+}
+
+@media (max-width: 1100px) {
+  .layout {
+    grid-template-columns: 1fr;
+  }
+  .panel {
+    min-height: 260px;
+  }
+}
+
+/* ===== Kuji Open Modal ===== */
+.kuji-open-card {
+  width: min(560px, 96vw);
+}
+
+.kuji-open-stage {
+  position: relative;
+  height: 420px;
+  border: 1px dashed var(--border);
+  border-radius: 14px;
+  background: #fafafa;
+  overflow: hidden;
+  /* display: flex;
+  align-items: center;
+  justify-content: center; */
+  --p: 0;
+}
+
+/*.kuji-open-sheet {
+  width: min(420px, 84vw);
+  aspect-ratio: 3 / 2;
+  cursor: grab;
+  touch-action: none; 
+  will-change: transform;
+}*/
+
+/* ✅ 종이: 크기/위치 고정, 왼쪽부터 사라지게 */
+.kuji-open-sheet {
+  position: absolute;
+  left: 50%;
+  top: 47%;
+  transform: translate(-50%, -50%);
+
+  width: min(420px, 84vw);
+  aspect-ratio: 3 / 2;
+  cursor: grab;
+  touch-action: none;
+  user-select: none;
+  will-change: transform;
+  /* position: relative; */
+  z-index: 2;
+  /* 기존 width/aspect-ratio 유지 */
+
+  /* p만큼 왼쪽을 잘라냄 → 왼쪽부터 사라지는 느낌 */
+  clip-path: inset(0 0 0 calc(var(--p) * 100%));
+  transition: clip-path 80ms linear;
+  background-image: url("./images/kuji.png");
+}
+
+.kuji-open-sheet.dragging {
+  cursor: grabbing;
+}
+
+.kuji-open-hint {
+  position: absolute;
+  bottom: 14px;
+  left: 14px;
+  right: 14px;
+  text-align: center;
+  font-size: 12px;
+  font-weight: 900;
+  color: var(--muted);
+  z-index: 3;
+}
+
+.kuji-open-hint.done {
+  color: #111;
+}
+
+.kuji-under {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+
+  width: min(420px, 84vw);
+  aspect-ratio: 3 / 2;
+
+  z-index: 1;
+}
+
+/* ✅ 초기에는 0% -> 숫자 안 보임, 드래그하면 --p만큼만 보임 */
+.kuji-under-reveal {
+  width: calc(var(--p) * 100%);
+  max-width: 100%;
+  overflow: hidden;
+}
+
+/* 숫자 자체는 고정폭(종이 폭) */
+.kuji-under-number {
+  position: absolute;
+  inset: 0;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  font-size: 56px;
+  font-weight: 900;
+  letter-spacing: 2px;
+  color: #111;
+}
+
+.kuji .kuji-pos {
+  position: absolute;
+  font-size: 24px;
+  font-weight: 900;
+  color: #111;
+  padding-left: 10px;
+  /* background: rgba(255, 255, 255, 0.85); */
+  /* border: 1px solid rgba(0, 0, 0, 0.08); */
+  pointer-events: none;
+}
+
+.kuji.opened .kuji-pos {
+  display: none;
+}
+
+/* ===== Custom Alert Modal ===== */
+.alert-card {
+  width: min(420px, 92vw);
+}
+
+.alert-message {
+  font-size: 14px;
+  font-weight: 800;
+  color: #111;
+  line-height: 1.5;
+  white-space: pre-wrap; /* 줄바꿈 메시지 지원 */
+}

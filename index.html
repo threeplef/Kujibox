@@ -1,0 +1,290 @@
+<!DOCTYPE html>
+<html lang="ko">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>쿠지박스</title>
+    <link rel="stylesheet" href="style.css" />
+    <link rel="icon" type="image/png" href="./images/favicon.png" />
+  </head>
+
+  <body>
+    <header>
+      <div class="brand">
+        <div style="display: flex; align-items: center; gap: 10px">
+          <div style="text-align: center">
+            <img src="./images/logo.png" style="width: 18%" />
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <main>
+      <div class="layout">
+        <!-- LEFT: PRIZE LIST -->
+        <section class="panel">
+          <div class="top-actions">
+            <h3>상품 목록</h3>
+            <button class="ghost1" id="btnOpenSettings">설정</button>
+          </div>
+          <div class="content">
+            <div class="muted" style="font-size: 12px; margin-bottom: 12px">
+              ※ 상품 목록 변경 가능 / 중간에 추가 가능
+            </div>
+            <div id="prizeList"></div>
+          </div>
+        </section>
+
+        <!-- CENTER: GRID -->
+        <section
+          style="
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            overflow-y: auto;
+            overscroll-behavior: contain;
+          "
+        >
+          <div class="center-top">
+            <div class="input">
+              <input
+                id="nameInput"
+                type="text"
+                placeholder="추첨자 이름 입력 후 Enter"
+                autocomplete="off"
+              />
+            </div>
+
+            <button class="primary" id="btnStart">시작</button>
+            <button class="ghost" id="btnResetSession">초기화</button>
+            <div class="status" id="statusLine">
+              상태: <strong id="statusText">대기</strong>
+              <span class="badge" id="currentNameBadge">이름 없음</span>
+            </div>
+
+            <div
+              style="
+                display: flex;
+                gap: 8px;
+                align-items: center;
+                min-width: 240px;
+              "
+            >
+              <label
+                style="
+                  font-size: 12px;
+                  color: #444;
+                  font-weight: 900;
+                  white-space: nowrap;
+                "
+                >총 쿠지</label
+              >
+              <input
+                id="totalInput"
+                type="number"
+                min="1"
+                step="1"
+                style="max-width: 120px"
+              />
+              <button class="ghost" id="btnRebuild">재생성</button>
+            </div>
+          </div>
+
+          <div class="grid-wrap">
+            <div class="muted" style="font-size: 12px; margin: 0 0 12px">
+              <span class="badge">규칙</span> 이름이 “기록 중” 상태일 때만
+              쿠지를 깔 수 있어요. (초기화하면 이름만 지워지고 기록은 유지)
+            </div>
+            <div class="grid" id="grid"></div>
+          </div>
+        </section>
+
+        <!-- RIGHT: HISTORY -->
+        <section class="panel history-panel">
+          <div class="top-actions">
+            <h3>기록</h3>
+            <button class="ghost1" id="btnDownload">기록 다운로드</button>
+          </div>
+          <div class="content">
+            <div class="muted" style="font-size: 12px; margin-bottom: 10px">
+              오픈:
+              <span class="badge" id="histCount">0</span>
+              &nbsp;&nbsp;|&nbsp;&nbsp; 남은 쿠지:
+              <span class="badge" id="remainingCount">0</span>
+            </div>
+            <table>
+              <thead>
+                <tr>
+                  <th style="width: 72px">이름</th>
+                  <th>번호</th>
+                  <!-- <th style="width: 60px">쿠지#</th>
+                  <th>시간</th> -->
+                </tr>
+              </thead>
+              <tbody id="historyBody"></tbody>
+            </table>
+          </div>
+        </section>
+      </div>
+
+      <!-- SETTINGS MODAL -->
+      <div class="modal hidden" id="settingsModal" aria-hidden="true">
+        <div
+          class="modal-card"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="settingsTitle"
+        >
+          <div class="modal-head">
+            <h3 id="settingsTitle">설정</h3>
+            <button class="ghost1" id="btnCloseSettings">닫기</button>
+          </div>
+
+          <div class="modal-body">
+            <div class="cfg-grid">
+              <!-- 번호 풀 -->
+              <!-- <div class="cfg-block">
+                <div class="cfg-title">당첨 번호(번호 풀)</div>
+                <div class="muted" style="font-size: 12px; margin-bottom: 8px">
+                  ① 비워두면 “1 ~ 총 쿠지”가 자동으로 랜덤 배정됩니다.<br />
+                  ② 직접 지정하려면 아래에서 “추가”로 번호들을 만들고
+                  저장하세요.
+                </div>
+
+                <div class="cfg-row">
+                  <input id="poolSingle" type="number" placeholder="번호 1개" />
+                  <button class="ghost" id="btnPoolAddSingle">추가</button>
+                </div>
+
+                <div class="cfg-row">
+                  <input id="poolFrom" type="number" placeholder="시작" />
+                  <input id="poolTo" type="number" placeholder="끝" />
+                  <button class="ghost" id="btnPoolAddRange">구간 추가</button>
+                </div>
+
+                <div class="cfg-row">
+                  <button class="ghost" id="btnPoolClear">전체 비우기</button>
+                </div>
+
+                <div class="pool-chips" id="poolChips"></div>
+
+                // 기존 textarea는 숨김 저장용(로직 호환용) 
+                <textarea
+                  id="settingsNumbers"
+                  class="ta hidden"
+                  rows="4"
+                ></textarea>
+              </div> -->
+
+              <!-- 상품 목록 -->
+              <div class="cfg-block">
+                <div class="cfg-title">상품 목록</div>
+                <div class="muted" style="font-size: 12px; margin-bottom: 8px">
+                  “번호 / 상품명 / 수량”만 입력하면 됩니다. (수량은 기본 1)
+                </div>
+
+                <div class="cfg-row">
+                  <button class="ghost" id="btnPrizeAddRow">+ 상품 추가</button>
+                </div>
+
+                <div class="prize-editor">
+                  <div class="prize-head">
+                    <div>번호</div>
+                    <div>상품명</div>
+                    <div>수량</div>
+                    <div></div>
+                  </div>
+                  <div id="prizeRows"></div>
+                </div>
+
+                <!-- 기존 JSON textarea는 숨김 저장용(로직 호환용) -->
+                <textarea
+                  id="settingsPrizes"
+                  class="ta hidden"
+                  rows="10"
+                ></textarea>
+              </div>
+            </div>
+
+            <div class="modal-actions">
+              <button class="primary" id="btnSaveSettings">저장</button>
+            </div>
+
+            <!-- <div class="muted" style="font-size: 12px">
+              ※ 상품목록을 현재 쿠지에 반영하려면 저장 시 확인 후
+              재생성됩니다(기록은 유지).
+            </div> -->
+          </div>
+        </div>
+      </div>
+
+      <!-- KUJI OPEN MODAL -->
+      <div class="modal hidden" id="kujiOpenModal" aria-hidden="true">
+        <div class="modal-card kuji-open-card" role="dialog" aria-modal="true">
+          <div class="modal-head">
+            <h3>쿠지 오픈</h3>
+            <button class="ghost1" id="btnCloseKujiOpen">닫기</button>
+          </div>
+
+          <div class="modal-body">
+            <div class="kuji-open-stage" id="kujiOpenStage">
+              <!-- 선택한 "그 쿠지"가 크게 보이는 영역 -->
+              <!-- 숫자(아래 깔림) -->
+              <div class="kuji-under" id="kujiUnder">
+                <div class="kuji-under-reveal" id="kujiUnderReveal">
+                  <div class="kuji-under-number" id="kujiUnderNumber"></div>
+                </div>
+              </div>
+
+              <!-- 종이(위 덮임) -->
+              <div class="kuji kuji-open-sheet" id="kujiOpenSheet"></div>
+
+              <div class="kuji-open-hint" id="kujiOpenHint">
+                왼쪽 → 오른쪽으로 드래그해서 까세요
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- CUSTOM ALERT MODAL -->
+      <div class="modal hidden" id="alertModal" aria-hidden="true">
+        <div class="modal-card alert-card" role="dialog" aria-modal="true">
+          <div class="modal-head">
+            <h3 id="alertTitle">알림</h3>
+            <button class="ghost1" id="btnCloseAlert">닫기</button>
+          </div>
+
+          <div class="modal-body">
+            <div id="alertMessage" class="alert-message"></div>
+            <!-- <div class="modal-actions">
+              <button class="primary" id="btnOkAlert">확인</button>
+            </div> -->
+          </div>
+        </div>
+      </div>
+
+      <!-- CUSTOM CONFIRM MODAL -->
+      <div class="modal hidden" id="confirmModal" aria-hidden="true">
+        <div class="modal-card alert-card" role="dialog" aria-modal="true">
+          <div class="modal-head">
+            <h3 id="confirmTitle">확인</h3>
+          </div>
+
+          <div class="modal-body">
+            <div id="confirmMessage" class="alert-message"></div>
+
+            <div class="modal-actions" style="gap: 8px">
+              <button class="ghost" id="btnCancelConfirm">취소</button>
+              <button class="primary" id="btnOkConfirm">확인</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </main>
+
+    <script type="module" src="script.js"></script>
+    <!-- SheetJS (xlsx) for Excel download -->
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+  </body>
+</html>
