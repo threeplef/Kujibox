@@ -1,7 +1,7 @@
 /***********************
  * CONFIG (원하는 대로 수정)
  ***********************/
-const DEFAULT_TOTAL = 200;
+const DEFAULT_TOTAL = 90;
 
 // "번호"에 대응되는 상품 목록(예시). 필요하면 마음대로 수정하세요.
 // - key: 번호(문자열/숫자)
@@ -74,6 +74,14 @@ const btnCloseKujiOpenEl = document.getElementById("btnCloseKujiOpen");
 const kujiOpenSheetEl = document.getElementById("kujiOpenSheet");
 const kujiOpenHintEl = document.getElementById("kujiOpenHint");
 
+// Access gate modal
+const accessModalEl = document.getElementById("accessModal");
+const accessInputEl = document.getElementById("accessInput");
+const btnAccessEnterEl = document.getElementById("btnAccessEnter");
+
+// Toast
+const toastEl = document.getElementById("toast");
+
 // Settings UI (intuitive)
 // const poolSingleEl = document.getElementById("poolSingle");
 // const poolFromEl = document.getElementById("poolFrom");
@@ -101,16 +109,36 @@ const confirmMessageEl = document.getElementById("confirmMessage");
 const btnCancelConfirmEl = document.getElementById("btnCancelConfirm");
 const btnOkConfirmEl = document.getElementById("btnOkConfirm");
 
+// ✅ 입장 코드(원하는 값으로 바꿔도 됨)
+const ACCESS_CODE = "1101";
+
+// ✅ 성공 상태 저장 키(브라우저 새로고침해도 유지하려면 localStorage)
+const ACCESS_OK_KEY = "kujibox_access_ok";
+
 /***********************
  * INIT
  ***********************/
 loadConfigFromStorage();
 totalInputEl.value = String(state.total ?? DEFAULT_TOTAL);
 renderAll();
+// ✅ 앱 시작 시 입장 코드 체크
+if (!isAccessGranted()) {
+  openAccessModal();
+}
 
 /***********************
  * EVENTS
  ***********************/
+
+btnAccessEnterEl.addEventListener("click", tryEnterWithCode);
+
+accessInputEl.addEventListener("keydown", (e) => {
+  if (e.key === "Enter") tryEnterWithCode();
+});
+
+// 모달 밖 클릭/배경 조작 막기 (모달 자체가 덮지만, 이벤트도 안전하게)
+accessModalEl.addEventListener("click", (e) => e.stopPropagation());
+
 // Enter로 시작
 nameInputEl.addEventListener("keydown", (e) => {
   if (e.key === "Enter") {
@@ -415,6 +443,68 @@ function resolveConfirm(ok) {
   }
   confirmModalEl.classList.add("hidden");
   confirmModalEl.setAttribute("aria-hidden", "true");
+}
+
+function isAccessGranted() {
+  return sessionStorage.getItem(ACCESS_OK_KEY) === "1";
+}
+
+function openAccessModal() {
+  accessModalEl.classList.remove("hidden");
+  accessModalEl.setAttribute("aria-hidden", "false");
+
+  // 입력 포커스
+  setTimeout(() => {
+    accessInputEl.value = "";
+    accessInputEl.focus();
+  }, 0);
+}
+
+function closeAccessModal() {
+  accessModalEl.classList.add("hidden");
+  accessModalEl.setAttribute("aria-hidden", "true");
+}
+
+function tryEnterWithCode() {
+  const code = String(accessInputEl.value ?? "").trim();
+  if (!code) {
+    showAlert("입장 코드를 입력해 주세요.");
+    accessInputEl.focus();
+    return;
+  }
+
+  if (code !== ACCESS_CODE) {
+    showAlert("입장 코드가 올바르지 않아요.");
+    accessInputEl.value = "";
+    accessInputEl.focus();
+    return;
+  }
+
+  sessionStorage.setItem(ACCESS_OK_KEY, "1");
+  closeAccessModal();
+  showToast("환영합니다! 🎉");
+}
+
+let toastTimer = null;
+
+function showToast(message, duration = 1800) {
+  if (!toastEl) return;
+
+  toastEl.textContent = String(message ?? "");
+  toastEl.classList.remove("hidden");
+
+  // reflow to apply transition
+  void toastEl.offsetWidth;
+
+  toastEl.classList.add("show");
+
+  if (toastTimer) clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => {
+    toastEl.classList.remove("show");
+    setTimeout(() => {
+      toastEl.classList.add("hidden");
+    }, 250);
+  }, duration);
 }
 
 function renderAll() {

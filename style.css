@@ -701,3 +701,59 @@ input[type="number"]:focus {
   line-height: 1.5;
   white-space: pre-wrap; /* 줄바꿈 메시지 지원 */
 }
+
+/* ===== Access Code Modal ===== */
+.access-card {
+  width: min(420px, 92vw);
+}
+
+.access-row {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
+.access-row .input1 {
+  flex: 1;
+}
+
+/* ===== Toast ===== */
+.toast {
+  position: fixed;
+  bottom: 24px;
+  left: 50%;
+  transform: translateX(-50%) translateY(20px);
+  background: rgba(30, 30, 30, 0.92);
+  color: #fff;
+  padding: 12px 18px;
+  border-radius: 999px;
+  font-size: 14px;
+  font-weight: 800;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.25s ease, transform 0.25s ease;
+  z-index: 10000;
+}
+
+.toast.show {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+}
+
+.toast.hidden {
+  display: none;
+}
+
+/* 모달 레이어 우선순위: alert/confirm가 access보다 위로 */
+#accessModal {
+  z-index: 9000;
+}
+#confirmModal {
+  z-index: 9500;
+}
+#alertModal {
+  z-index: 10000;
+}
+#toast {
+  z-index: 11000;
+}
