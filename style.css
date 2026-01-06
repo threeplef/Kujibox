@@ -109,7 +109,7 @@ main {
 
 .layout {
   display: grid;
-  grid-template-columns: 320px 1fr;
+  grid-template-columns: 500px 1fr;
   gap: 14px;
   align-items: stretch;
   min-height: calc(100vh - 64px - 32px);
@@ -587,6 +587,7 @@ input[type="number"]:focus {
   align-items: center;
   justify-content: center; */
   --p: 0;
+  touch-action: none;
 }
 
 /*.kuji-open-sheet {
@@ -645,10 +646,8 @@ input[type="number"]:focus {
   left: 50%;
   top: 50%;
   transform: translate(-50%, -50%);
-
   width: min(420px, 84vw);
   aspect-ratio: 3 / 2;
-
   z-index: 1;
 }
 
@@ -663,15 +662,17 @@ input[type="number"]:focus {
 .kuji-under-number {
   position: absolute;
   inset: 0;
-
   display: flex;
   align-items: center;
   justify-content: center;
-
   font-size: 56px;
   font-weight: 900;
   letter-spacing: 2px;
   color: #111;
+  pointer-events: none; /* ✅ 숫자가 포인터 이벤트를 절대 못 받게 */
+  user-select: none; /* ✅ 텍스트 선택 방지 */
+  -webkit-user-select: none;
+  -webkit-user-drag: none; /* ✅ iOS/Safari 드래그 방지 */
 }
 
 .kuji .kuji-pos {
