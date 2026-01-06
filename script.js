@@ -519,6 +519,11 @@ function closeKujiOpenModal() {
   kujiOpenModalEl.setAttribute("aria-hidden", "true");
 }
 
+function hideKujiOpenModalOnly() {
+  kujiOpenModalEl.classList.add("hidden");
+  kujiOpenModalEl.setAttribute("aria-hidden", "true");
+}
+
 function setupKujiSwipeOpen() {
   dragArmed = true;
 
@@ -619,6 +624,7 @@ function showWinIfPrizeNumber(n) {
     };
   }
 
+  if (winPrizeNumEl) winPrizeNumEl.textContent = String(n);
   if (winPrizeNameEl) winPrizeNameEl.textContent = name;
 
   // (선택) 품절/잔여 안내: 현재 history 기준 + 이번 1회 반영해서 계산
@@ -635,6 +641,9 @@ function showWinIfPrizeNumber(n) {
 
   showWinResult();
   startConfetti();
+
+  pendingWinCommitIndex = activeKujiIndex;
+  hideKujiOpenModalOnly();
 }
 
 // ✅ 당첨 오버레이 닫기(백드롭 클릭/버튼)
@@ -642,6 +651,14 @@ function setupWinOverlayClose() {
   const close = () => {
     hideWinResult();
     stopConfetti();
+    if (pendingWinCommitIndex !== null) {
+      commitOpenKuji(pendingWinCommitIndex);
+      pendingWinCommitIndex = null;
+
+      // 다음 오픈을 위해 정리
+      activeKujiIndex = null;
+      pendingOpen = false;
+    }
   };
   if (btnCloseWinOverlayEl)
     btnCloseWinOverlayEl.addEventListener("click", close);
@@ -938,6 +955,7 @@ function renderCounters() {
 }
 
 let activeKujiIndex = null; // 지금 팝업으로 띄운 쿠지 index
+let pendingWinCommitIndex = null; // ✅ 당첨 오버레이 닫힐 때 오픈 확정할 쿠지 index
 let pendingOpen = false; // 드래그로 "오픈 완료"했는지
 let dragArmed = false; // 드래그 이벤트 중복 등록 방지
 

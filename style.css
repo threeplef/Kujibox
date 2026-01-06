@@ -804,9 +804,9 @@ input[type="number"]:focus {
 
 .win-card {
   position: relative;
-  width: min(600px, 100vw);
+  width: min(635px, 100vw);
   max-height: 100vh;
-  height: 600px;
+  height: 635px;
   overflow: auto;
   border-radius: 18px;
   background: #fff;
