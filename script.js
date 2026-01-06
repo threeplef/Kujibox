@@ -137,6 +137,16 @@ const prizeRowsEl = document.getElementById("prizeRows");
 const kujiUnderNumberEl = document.getElementById("kujiUnderNumber");
 const kujiOpenStageEl = document.getElementById("kujiOpenStage");
 
+// ✅ Win UI (inside kuji open modal)
+const winResultEl = document.getElementById("winResult");
+const winPrizeImgEl = document.getElementById("winPrizeImg");
+const winPrizeNumEl = document.getElementById("winPrizeNum");
+const winPrizeNameEl = document.getElementById("winPrizeName");
+const winPrizeNoteEl = document.getElementById("winPrizeNote");
+const confettiCanvasEl = document.getElementById("confettiCanvas");
+const winOverlayBackdropEl = document.getElementById("winOverlayBackdrop");
+const btnCloseWinOverlayEl = document.getElementById("btnCloseWinOverlay");
+
 // Custom alert modal
 const alertModalEl = document.getElementById("alertModal");
 const alertMessageEl = document.getElementById("alertMessage");
@@ -224,6 +234,7 @@ renderAll();
 if (!isAccessGranted()) {
   openAccessModal();
 }
+setupWinOverlayClose();
 
 /***********************
  * EVENTS
@@ -474,6 +485,10 @@ function openKujiOpenModal(index) {
   // ✅ 진행률 p 초기화 (0: 아직 안 깜)
   kujiOpenStageEl.style.setProperty("--p", "0");
 
+  // ✅ 당첨 UI/컨페티 초기화
+  hideWinResult();
+  stopConfetti();
+
   // 모달 열기
   kujiOpenModalEl.classList.remove("hidden");
   kujiOpenModalEl.setAttribute("aria-hidden", "false");
@@ -493,6 +508,10 @@ function closeKujiOpenModal() {
     commitOpenKuji(activeKujiIndex); // ✅ 여기서만 바닥 오픈 반영
   }
 
+  // ✅ 닫을 때 폭죽/당첨 UI 정리
+  stopConfetti();
+  hideWinResult();
+
   activeKujiIndex = null;
   pendingOpen = false;
 
@@ -508,7 +527,7 @@ function setupKujiSwipeOpen() {
   let curX = 0;
 
   // 얼마나 드래그하면 "깐 것"으로 볼지(비율)
-  const THRESHOLD_RATIO = 0.55;
+  const THRESHOLD_RATIO = 0.5;
 
   kujiOpenSheetEl.addEventListener("pointerdown", (e) => {
     if (activeKujiIndex === null) return;
@@ -557,13 +576,247 @@ function setupKujiSwipeOpen() {
       kujiOpenHintEl.classList.add("done");
       kujiOpenHintEl.textContent =
         "오픈 완료! 닫기를 누르면 바닥에서 숫자가 공개돼요.";
+
+      // ✅ 당첨이면: 상품 이미지/이름 + 폭죽 효과
+      if (activeKujiIndex !== null) {
+        const n = state.assignments[activeKujiIndex];
+        showWinIfPrizeNumber(n);
+      }
     } else {
       pendingOpen = false;
 
       // ✅ 다시 덮기
       kujiOpenStageEl.style.setProperty("--p", "0");
+
+      // ✅ 다시 덮으면 당첨 UI/폭죽도 숨김
+      hideWinResult();
+      stopConfetti();
     }
   });
+}
+
+// =========================
+// ✅ WIN RESULT + CONFETTI
+// =========================
+function showWinIfPrizeNumber(n) {
+  // PRIZES에 있는 번호면 "당첨"으로 처리
+  if (!PRIZES || !Object.prototype.hasOwnProperty.call(PRIZES, n)) {
+    hideWinResult();
+    stopConfetti();
+    return;
+  }
+
+  const prize = PRIZES[n];
+  const name = String(prize?.name ?? "").trim() || "상품";
+
+  // 이미지: 기존 helper로 idb:// / 경로 / 파일명 모두 지원
+  if (winPrizeImgEl) {
+    // fallback은 번호 기본 이미지
+    setImgSrcAsync(winPrizeImgEl, prize?.img, `./images/${n}.png`);
+    winPrizeImgEl.onerror = () => {
+      winPrizeImgEl.onerror = null;
+      winPrizeImgEl.src = "./images/placeholder.png";
+    };
+  }
+
+  if (winPrizeNameEl) winPrizeNameEl.textContent = name;
+
+  // (선택) 품절/잔여 안내: 현재 history 기준 + 이번 1회 반영해서 계산
+  const alreadyHits = state.history.reduce(
+    (acc, h) => (h.number === n ? acc + 1 : acc),
+    0
+  );
+  const limit = Number.isFinite(prize?.remaining) ? Number(prize.remaining) : 1;
+  const afterHits = alreadyHits + 1;
+  const soldOutAfterThis = afterHits >= Math.max(1, limit);
+  if (winPrizeNoteEl) {
+    winPrizeNoteEl.textContent = soldOutAfterThis ? "당첨을 축하합니다!" : "";
+  }
+
+  showWinResult();
+  startConfetti();
+}
+
+// ✅ 당첨 오버레이 닫기(백드롭 클릭/버튼)
+function setupWinOverlayClose() {
+  const close = () => {
+    hideWinResult();
+    stopConfetti();
+  };
+  if (btnCloseWinOverlayEl)
+    btnCloseWinOverlayEl.addEventListener("click", close);
+  if (winOverlayBackdropEl)
+    winOverlayBackdropEl.addEventListener("click", close);
+}
+
+function showWinResult() {
+  if (!winResultEl) return;
+  winResultEl.classList.remove("hidden");
+}
+
+function hideWinResult() {
+  if (!winResultEl) return;
+  winResultEl.classList.add("hidden");
+  if (winPrizeNoteEl) winPrizeNoteEl.textContent = "";
+}
+
+let __confettiRAF = null;
+let __confettiStopTimer = null;
+let __confettiParticles = [];
+let __confettiLastTs = 0;
+let __confettiW = 0;
+let __confettiH = 0;
+let __confettiSpawn = null; // {cx, top, spreadX, spreadY}
+
+function startConfetti(durationMs = 1200) {
+  if (!confettiCanvasEl) return;
+  stopConfetti();
+
+  const ctx = confettiCanvasEl.getContext("2d");
+  if (!ctx) return;
+
+  const overlayEl = winResultEl; // win-overlay
+  const cardEl = overlayEl ? overlayEl.querySelector(".win-card") : null;
+
+  const resize = () => {
+    // CSS 크기 -> 실제 픽셀 크기 맞춤
+    const rect = confettiCanvasEl.getBoundingClientRect();
+    const dpr = Math.min(1.25, window.devicePixelRatio || 1);
+    confettiCanvasEl.width = Math.max(1, Math.floor(rect.width * dpr));
+    confettiCanvasEl.height = Math.max(1, Math.floor(rect.height * dpr));
+    // draw는 CSS 픽셀 좌표로(내부 픽셀은 dpr 반영)
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    __confettiW = rect.width;
+    __confettiH = rect.height;
+
+    // ✅ 카드 기준 스폰 좌표도 여기서만 계산(매 프레임 측정 금지)
+    let cx = __confettiW * 0.5;
+    let top = __confettiH * 0.35;
+    let spreadX = __confettiW * 0.16;
+    let spreadY = __confettiH * 0.05;
+    if (cardEl) {
+      const canvasRect = rect; // getBoundingClientRect 결과 재사용
+      const r = cardEl.getBoundingClientRect();
+      // 캔버스 기준 좌표로 변환
+      cx = r.left - canvasRect.left + r.width / 2;
+      top = r.top - canvasRect.top + Math.min(34, r.height * 0.18);
+      spreadX = Math.max(80, r.width * 0.3);
+      spreadY = Math.max(10, r.height * 0.06);
+    }
+    __confettiSpawn = { cx, top, spreadX, spreadY };
+  };
+
+  resize();
+  window.addEventListener("resize", resize, { passive: true });
+
+  const colors = [
+    "#ff4f8f",
+    "#ffd54f",
+    "#7cf0ff",
+    "#b6ff6a",
+    "#b48cff",
+    "#ffffff",
+  ];
+
+  const rand = (a, b) => a + Math.random() * (b - a);
+
+  // ✅ “짧은 버스트”로만: 재스폰/무한루프 금지
+  const COUNT = 38; // 더 줄임(렉 줄이기)
+  const s = __confettiSpawn || {
+    cx: __confettiW * 0.5,
+    top: __confettiH * 0.35,
+    spreadX: 120,
+    spreadY: 16,
+  };
+  __confettiParticles = Array.from({ length: COUNT }, () => ({
+    x: rand(s.cx - s.spreadX, s.cx + s.spreadX),
+    y: rand(s.top - s.spreadY, s.top + s.spreadY),
+    vx: rand(-120, 120), // px/s
+    vy: rand(-520, -320), // px/s
+    g: rand(820, 1080), // px/s^2
+    size: rand(3, 6),
+    c: colors[(Math.random() * colors.length) | 0],
+    life: rand(0.9, 1.0),
+  }));
+
+  const tick = (ts) => {
+    if (!__confettiLastTs) __confettiLastTs = ts;
+    // dt: 초 단위(너무 큰 dt는 클램프)
+    const dt = Math.min(0.033, (ts - __confettiLastTs) / 1000);
+    __confettiLastTs = ts;
+
+    const w = __confettiW;
+    const h = __confettiH;
+    ctx.clearRect(0, 0, w, h);
+
+    let alive = 0;
+    for (let i = 0; i < __confettiParticles.length; i++) {
+      const p = __confettiParticles[i];
+      if (p.life <= 0) continue;
+      p.vy += p.g * dt;
+      p.x += p.vx * dt;
+      p.y += p.vy * dt;
+      p.life -= 1.25 * dt;
+
+      // draw (가벼운 사각 confetti)
+      if (p.life > 0) {
+        alive++;
+        const a = Math.max(0, Math.min(1, p.life));
+        ctx.globalAlpha = a;
+        ctx.fillStyle = p.c;
+        ctx.fillRect(
+          p.x - p.size,
+          p.y - p.size * 0.7,
+          p.size * 2,
+          p.size * 1.4
+        );
+      }
+    }
+    ctx.globalAlpha = 1;
+
+    // ✅ 살아있는 파티클 없으면 즉시 종료(불필요한 프레임 제거)
+    if (alive <= 0) {
+      stopConfetti();
+      return;
+    }
+    __confettiRAF = requestAnimationFrame(tick);
+  };
+
+  __confettiLastTs = 0;
+  __confettiRAF = requestAnimationFrame(tick);
+  __confettiStopTimer = setTimeout(() => stopConfetti(), durationMs);
+
+  // stopConfetti에서 removeEventListener를 해야 해서 핸들러를 캔버스에 붙여둠
+  confettiCanvasEl.__kujiResizeHandler = resize;
+}
+
+function stopConfetti() {
+  if (__confettiStopTimer) {
+    clearTimeout(__confettiStopTimer);
+    __confettiStopTimer = null;
+  }
+
+  if (__confettiRAF) {
+    cancelAnimationFrame(__confettiRAF);
+    __confettiRAF = null;
+  }
+
+  __confettiLastTs = 0;
+  if (confettiCanvasEl) {
+    const ctx = confettiCanvasEl.getContext("2d");
+    if (ctx) {
+      ctx.clearRect(0, 0, __confettiW || 9999, __confettiH || 9999);
+    }
+    const h = confettiCanvasEl.__kujiResizeHandler;
+    if (typeof h === "function") {
+      window.removeEventListener("resize", h);
+    }
+    delete confettiCanvasEl.__kujiResizeHandler;
+  }
+  __confettiParticles = [];
+  __confettiW = 0;
+  __confettiH = 0;
+  __confettiSpawn = null;
 }
 
 function showAlert(message) {

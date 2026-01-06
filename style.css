@@ -622,6 +622,16 @@ input[type="number"]:focus {
   touch-action: none;
 }
 
+/* ===== Confetti Canvas (폭죽 효과) ===== */
+.confetti-canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 20; /* 힌트/종이 위로 살짝(원하면 2~3으로 낮춰도 됨) */
+}
+
 /*.kuji-open-sheet {
   width: min(420px, 84vw);
   aspect-ratio: 3 / 2;
@@ -707,6 +717,162 @@ input[type="number"]:focus {
   -webkit-user-drag: none; /* ✅ iOS/Safari 드래그 방지 */
   opacity: var(--p); /* ✅ p=0이면 완전 투명, 드래그하면 서서히 보임 */
   transition: opacity 80ms linear;
+}
+
+/* ===== Win Result (당첨 결과 영역) ===== */
+.win-result {
+  margin-top: 12px;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  background: #fff;
+  padding: 12px;
+  box-shadow: var(--shadow);
+}
+
+.win-badge {
+  display: inline-block;
+  width: 85px;
+  font-size: 12px;
+  font-weight: 1000;
+  border-radius: 999px;
+  margin-bottom: 5px;
+}
+
+.win-col {
+  display: grid;
+  justify-content: center;
+  gap: 30px;
+}
+
+.win-thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.win-meta {
+  display: grid;
+  gap: 6px;
+  text-align: center;
+}
+
+.win-num {
+  font-size: 26px;
+  font-weight: 1000;
+  letter-spacing: -0.6px;
+}
+
+.win-name {
+  font-size: 27px;
+  font-weight: 1000;
+  line-height: 1.2;
+}
+
+.win-note {
+  font-size: 12px;
+  font-weight: 800;
+  margin-top: 5px;
+}
+
+/* ===== Win Overlay (모달 중앙 오버레이 카드) ===== */
+.win-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 9999; /* 종이/힌트/컨페티 위 */
+  display: grid;
+  place-items: center;
+}
+
+.win-overlay-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.45);
+  backdrop-filter: blur(2px);
+  z-index: 1;
+}
+
+/* ✅ 폭죽 캔버스: 카드보다 위로 */
+.confetti-canvas-overlay {
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 3; /* 카드(2)보다 위 */
+}
+
+.win-card {
+  position: relative;
+  width: min(600px, 100vw);
+  max-height: 100vh;
+  height: 600px;
+  overflow: auto;
+  border-radius: 18px;
+  background: #fff;
+  border: 1px solid rgba(0, 0, 0, 0.12);
+  box-shadow: 0 18px 60px rgba(0, 0, 0, 0.25);
+  padding: 16px;
+  transform: translateY(0);
+  animation: winPop 180ms ease-out;
+  z-index: 2;
+}
+
+@keyframes winPop {
+  from {
+    transform: translateY(8px) scale(0.98);
+    opacity: 0.6;
+  }
+  to {
+    transform: translateY(0) scale(1);
+    opacity: 1;
+  }
+}
+
+.win-card-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.win-thumb {
+  width: 400px;
+  height: 400px;
+}
+
+.win-thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.win-meta {
+  display: grid;
+  gap: 8px;
+}
+
+.win-num {
+  font-size: 34px;
+  font-weight: 1000;
+  letter-spacing: -0.8px;
+}
+
+.win-note {
+  font-size: 13px;
+  font-weight: 800;
+}
+
+/* 작은 화면에서는 세로로 */
+@media (max-width: 420px) {
+  .win-thumb {
+    height: min(260px, 40vh);
+  }
+  .win-name {
+    font-size: 20px;
+  }
 }
 
 .kuji .kuji-pos {

@@ -376,6 +376,54 @@
                 왼쪽 → 오른쪽으로 드래그해서 까세요
               </div>
             </div>
+
+            <!-- ✅ 당첨 결과 (당첨 번호일 때만 표시) -->
+            <!-- <div class="win-result hidden" id="winResult" aria-live="polite">
+              <div class="win-row">
+                <div class="win-thumb">
+                  <img id="winPrizeImg" alt="당첨 상품 이미지" />
+                </div>
+                <div class="win-meta">
+                  <div class="win-num" id="winPrizeNum"></div> 
+                  <div class="win-badge">🎉 당첨!</div>
+                  <div class="win-name" id="winPrizeName"></div>
+                  <div class="win-note muted" id="winPrizeNote"></div> 
+                </div>
+              </div>
+            </div> -->
+          </div>
+        </div>
+      </div>
+
+      <!-- ✅ 당첨 오버레이: 모달 카드 바깥(=모달 전체 기준) -->
+      <div
+        class="win-overlay hidden"
+        id="winResult"
+        aria-live="polite"
+        role="dialog"
+        aria-modal="true"
+      >
+        <div class="win-overlay-backdrop" id="winOverlayBackdrop"></div>
+        <!-- ✅ 폭죽: 당첨 카드보다 위 레이어 -->
+        <canvas class="confetti-canvas-overlay" id="confettiCanvas"></canvas>
+        <div class="win-card">
+          <div class="win-card-head">
+            <div class="win-badge"></div>
+            <button class="ghost1" type="button" id="btnCloseWinOverlay">
+              X
+            </button>
+          </div>
+
+          <!-- ✅ 세로 레이아웃: 이미지 위, 텍스트 아래 -->
+          <div class="win-col">
+            <div class="win-thumb">
+              <img id="winPrizeImg" alt="당첨 상품 이미지" />
+            </div>
+            <div class="win-meta">
+              <div class="win-num" id="winPrizeNum"></div>
+              <div class="win-name" id="winPrizeName"></div>
+              <div class="win-note muted" id="winPrizeNote"></div>
+            </div>
           </div>
         </div>
       </div>
