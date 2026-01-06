@@ -87,6 +87,7 @@
                 style="max-width: 120px"
               />
               <button class="ghost" id="btnRebuild">재생성</button>
+              <button class="ghost" id="btnToggleHistory">기록 보기</button>
             </div>
           </div>
 
@@ -100,7 +101,7 @@
         </section>
 
         <!-- RIGHT: HISTORY -->
-        <section class="panel history-panel">
+        <!-- <section class="panel history-panel">
           <div class="top-actions">
             <h3>기록</h3>
             <button class="ghost1" id="btnDownload">기록 다운로드</button>
@@ -117,14 +118,53 @@
                 <tr>
                   <th style="width: 72px">이름</th>
                   <th>번호</th>
-                  <!-- <th style="width: 60px">쿠지#</th>
-                  <th>시간</th> -->
                 </tr>
               </thead>
               <tbody id="historyBody"></tbody>
             </table>
           </div>
-        </section>
+        </section> -->
+      </div>
+
+      <!-- HISTORY MODAL -->
+      <div class="modal hidden" id="historyModal" aria-hidden="true">
+        <div
+          class="modal-card history-modal-card"
+          role="dialog"
+          aria-modal="true"
+        >
+          <div class="modal-head">
+            <h3>기록</h3>
+            <button class="ghost1" id="btnCloseHistoryModal">닫기</button>
+          </div>
+
+          <div class="modal-body history-modal-body">
+            <div
+              class="top-actions"
+              style="border-bottom: none; padding: 0; margin-bottom: 10px"
+            >
+              <div class="muted" style="font-size: 12px">
+                오픈:
+                <span class="badge" id="histCountModal">0</span>
+                &nbsp;&nbsp;|&nbsp;&nbsp; 남은 쿠지:
+                <span class="badge" id="remainingCountModal">0</span>
+              </div>
+              <button class="ghost1" id="btnDownloadModal">
+                기록 다운로드
+              </button>
+            </div>
+
+            <table>
+              <thead>
+                <tr>
+                  <th style="width: 72px">이름</th>
+                  <th>번호</th>
+                </tr>
+              </thead>
+              <tbody id="historyBodyModal"></tbody>
+            </table>
+          </div>
+        </div>
       </div>
 
       <!-- SETTINGS MODAL -->

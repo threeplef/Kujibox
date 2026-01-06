@@ -109,7 +109,7 @@ main {
 
 .layout {
   display: grid;
-  grid-template-columns: 320px 1fr 320px;
+  grid-template-columns: 320px 1fr;
   gap: 14px;
   align-items: stretch;
   min-height: calc(100vh - 64px - 32px);
@@ -756,4 +756,19 @@ input[type="number"]:focus {
 }
 #toast {
   z-index: 11000;
+}
+
+.history-modal-card {
+  width: min(680px, 96vw);
+}
+
+.history-modal-body table {
+  width: 100%;
+}
+
+.history-modal-body th,
+.history-modal-body td {
+  white-space: normal;
+  overflow-wrap: anywhere;
+  word-break: break-word;
 }

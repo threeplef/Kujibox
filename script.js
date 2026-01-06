@@ -45,9 +45,15 @@ let state = loadState();
  * DOM
  ***********************/
 const gridEl = document.getElementById("grid");
-const historyBodyEl = document.getElementById("historyBody");
-const histCountEl = document.getElementById("histCount");
-const remainingCountEl = document.getElementById("remainingCount");
+const historyBodyEl =
+  document.getElementById("historyBody") ||
+  document.getElementById("historyBodyModal");
+const histCountEl =
+  document.getElementById("histCount") ||
+  document.getElementById("histCountModal");
+const remainingCountEl =
+  document.getElementById("remainingCount") ||
+  document.getElementById("remainingCountModal");
 const prizeListEl = document.getElementById("prizeList");
 
 const btnOpenSettingsEl = document.getElementById("btnOpenSettings");
@@ -67,6 +73,16 @@ const currentNameBadgeEl = document.getElementById("currentNameBadge");
 
 const totalInputEl = document.getElementById("totalInput");
 const btnRebuildEl = document.getElementById("btnRebuild");
+
+const btnToggleHistoryEl = document.getElementById("btnToggleHistory");
+// const historyPanelEl = document.querySelector(".history-panel");
+// History modal
+const historyModalEl = document.getElementById("historyModal");
+const btnCloseHistoryModalEl = document.getElementById("btnCloseHistoryModal");
+const historyBodyModalEl = document.getElementById("historyBodyModal");
+const histCountModalEl = document.getElementById("histCountModal");
+const remainingCountModalEl = document.getElementById("remainingCountModal");
+const btnDownloadModalEl = document.getElementById("btnDownloadModal");
 
 // Kuji open modal
 const kujiOpenModalEl = document.getElementById("kujiOpenModal");
@@ -212,7 +228,7 @@ btnPrizeAddRowEl.addEventListener("click", () => {
 });
 
 // 엑셀 다운로드
-btnDownloadEl.addEventListener("click", () => downloadExcel());
+btnDownloadEl?.addEventListener("click", downloadExcel);
 
 // 재생성: total/assignment/opened를 다시 만들고, 기록은 유지할지 선택 여지 있음
 // 여기서는 안전하게: "전체 쿠지 재생성"은 상태를 새로 만들고 기록도 같이 초기화하도록 구현(실수 방지 위해 confirm)
@@ -232,6 +248,18 @@ btnRebuildEl.addEventListener("click", async () => {
   saveState();
   renderAll();
 });
+
+btnToggleHistoryEl.addEventListener("click", () => {
+  openHistoryModal();
+});
+
+btnCloseHistoryModalEl.addEventListener("click", closeHistoryModal);
+
+// 다운로드도 모달 버튼에서 가능하게
+btnDownloadModalEl.addEventListener("click", () => downloadExcel());
+
+// 바깥 클릭으로 닫히지 않게(원하면 overlay 클릭 닫기로 바꿀 수 있음)
+historyModalEl.addEventListener("click", (e) => e.stopPropagation());
 
 btnCloseKujiOpenEl.addEventListener("click", closeKujiOpenModal);
 
@@ -602,6 +630,7 @@ function renderGrid() {
 // }
 
 function renderHistory() {
+  if (!historyBodyEl) return; // ✅ 기록 UI가 없으면 렌더 스킵
   historyBodyEl.innerHTML = "";
 
   // 오래된→최신 순으로 누적해야 "17,24,35" 순서가 자연스러움
@@ -648,6 +677,68 @@ function renderHistory() {
     tr.appendChild(tdName);
     tr.appendChild(tdNum);
     historyBodyEl.appendChild(tr);
+  }
+}
+
+function openHistoryModal() {
+  renderHistoryModal();
+  historyModalEl.classList.remove("hidden");
+  historyModalEl.setAttribute("aria-hidden", "false");
+}
+
+function closeHistoryModal() {
+  historyModalEl.classList.add("hidden");
+  historyModalEl.setAttribute("aria-hidden", "true");
+}
+
+function renderHistoryModal() {
+  // 카운터
+  histCountModalEl.textContent = String(state.history.length);
+  const remaining = state.opened.filter((v) => !v).length;
+  remainingCountModalEl.textContent = String(remaining);
+
+  // 테이블
+  historyBodyModalEl.innerHTML = "";
+
+  const rowsOldToNew = [...state.history].reverse();
+
+  const byName = new Map();
+  const order = [];
+
+  for (const r of rowsOldToNew) {
+    const name = String(r.name ?? "").trim() || "이름없음";
+    if (!byName.has(name)) {
+      byName.set(name, []);
+      order.push(name);
+    }
+    byName.get(name).push(r.number);
+  }
+
+  for (const name of order) {
+    const nums = byName.get(name);
+
+    const tr = document.createElement("tr");
+
+    const tdName = document.createElement("td");
+    tdName.textContent = name;
+
+    const tdNum = document.createElement("td");
+    tdNum.innerHTML = "";
+
+    nums.forEach((n, idx) => {
+      if (idx > 0) tdNum.appendChild(document.createTextNode(","));
+
+      const span = document.createElement("span");
+      span.textContent = String(n);
+      if (PRIZES && Object.prototype.hasOwnProperty.call(PRIZES, n)) {
+        span.className = "num-win";
+      }
+      tdNum.appendChild(span);
+    });
+
+    tr.appendChild(tdName);
+    tr.appendChild(tdNum);
+    historyBodyModalEl.appendChild(tr);
   }
 }
 
