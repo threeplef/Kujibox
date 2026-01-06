@@ -1,3 +1,11 @@
+@import url("https://fonts.googleapis.com/css2?family=Black+Han+Sans&display=swap");
+
+.black-han-sans-regular {
+  font-family: "Black Han Sans", sans-serif;
+  font-weight: 400;
+  font-style: normal;
+}
+
 :root {
   --bg: #f5f5f7;
   --panel: #ffffff;
@@ -63,6 +71,13 @@ header {
   border-bottom: 1px solid var(--border);
 }
 
+.top-actions1 {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  align-items: center;
+}
+
 .top-actions h3 {
   margin-left: 10px;
 }
@@ -96,6 +111,11 @@ button.ghost1 {
   padding: 5px 10px;
 }
 
+button.ghost2 {
+  background: #fff;
+  margin-left: 4%;
+}
+
 button.ghost {
   background: #fff;
 }
@@ -109,7 +129,7 @@ main {
 
 .layout {
   display: grid;
-  grid-template-columns: 500px 1fr;
+  grid-template-columns: 600px 1fr;
   gap: 14px;
   align-items: stretch;
   min-height: calc(100vh - 64px - 32px);
@@ -462,6 +482,22 @@ input[type="number"]:focus {
   margin-bottom: 8px;
 }
 
+.cfg-row1 {
+  display: grid;
+  grid-template-columns: 0.2fr 1fr;
+  gap: 8px;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.cfg-row2 {
+  display: grid;
+  grid-template-columns: 1fr 0.1fr;
+  gap: 8px;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
 .cfg-row input[type="number"] {
   padding: 8px 10px;
   border: 1px solid var(--border);
@@ -505,7 +541,7 @@ input[type="number"]:focus {
 .prize-head,
 .prize-row {
   display: grid;
-  grid-template-columns: 80px 1fr 80px 56px;
+  grid-template-columns: 70px 1.3fr 1.2fr 60px 50px; /* 이미지 칸 추가 */
   gap: 8px;
   align-items: center;
   padding: 8px 10px;
@@ -528,7 +564,8 @@ input[type="number"]:focus {
 }
 
 .prize-row .btn-del {
-  padding: 7px 10px;
+  width: 55px;
+  padding: 9px 12px;
 }
 
 /* mobile: settings columns */
@@ -541,11 +578,6 @@ input[type="number"]:focus {
 /* ===== SOLD OUT badge on prize list ===== */
 .prize-item {
   position: relative;
-}
-
-.prize-item.soldout {
-  opacity: 0.7;
-  background-color: #b3b3b3;
 }
 
 .soldout-badge {
@@ -673,6 +705,8 @@ input[type="number"]:focus {
   user-select: none; /* ✅ 텍스트 선택 방지 */
   -webkit-user-select: none;
   -webkit-user-drag: none; /* ✅ iOS/Safari 드래그 방지 */
+  opacity: var(--p); /* ✅ p=0이면 완전 투명, 드래그하면 서서히 보임 */
+  transition: opacity 80ms linear;
 }
 
 .kuji .kuji-pos {
@@ -772,4 +806,304 @@ input[type="number"]:focus {
   white-space: normal;
   overflow-wrap: anywhere;
   word-break: break-word;
+}
+
+/* ===== Prize Board (Image-matched) ===== */
+.prize-panel {
+  background: linear-gradient(180deg, #ffe6ee 0%, #ffd2e2 60%, #ffd9e8 100%);
+}
+
+/* ---------- HERO ---------- */
+.prize-hero {
+  padding: 18px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.prize-hero-title {
+  font-weight: 1000;
+  font-size: 38px;
+  line-height: 1.05;
+}
+.prize-hero-title .accent {
+  color: #ff4f8f;
+}
+
+.prize-hero-sub {
+  margin-top: 8px;
+  display: inline-block;
+  padding: 6px 12px;
+  font-size: 13px;
+  font-weight: 900;
+  background: #fff;
+  border-radius: 999px;
+  border: 1px solid rgba(0, 0, 0, 0.15);
+}
+
+.prize-hero-right {
+  width: 130px;
+  height: 130px;
+  border-radius: 16px;
+  background: #fff;
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.prize-hero-right img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* ===== Left hero (top figure) ===== */
+.left-hero {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 10px 14px;
+  border: 1px solid #eee;
+  border-radius: 14px;
+  background: linear-gradient(180deg, #fff1f6, #ffe7f0);
+  margin-bottom: 12px;
+}
+
+.hero-kicker {
+  font-weight: 1000;
+  font-size: 12px;
+  color: #9a2e5f;
+  margin-bottom: 6px;
+}
+
+.hero-title {
+  font-weight: 1000;
+  line-height: 1.05;
+  font-size: 28px;
+  color: #4a0930;
+}
+
+.hero-title span {
+  display: inline-block;
+  margin-top: 2px;
+  color: #7c174a;
+}
+
+.hero-sub {
+  margin-top: 8px;
+  font-size: 12px;
+  font-weight: 800;
+  color: #6b6b6b;
+}
+
+.left-hero-figure {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  margin-right: 30px;
+}
+
+.left-hero-figure img {
+  width: 135px;
+  height: 160px;
+  margin-top: 10px;
+  object-fit: contain;
+  filter: drop-shadow(0 10px 18px rgba(0, 0, 0, 0.12));
+}
+
+.hero-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(255, 255, 255, 0.8);
+  border: 1px solid #f2c7d8;
+  border-radius: 999px;
+  padding: 6px 10px;
+  max-width: 220px;
+  margin-top: 6px;
+}
+
+.hero-chip {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-weight: 1000;
+  font-size: 15px;
+  background: #ffd54f;
+  border: 1px solid #f0c83d;
+}
+
+.hero-name {
+  font-size: 14px;
+  font-weight: 1000;
+  color: #222;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* ===== Prize grid cards (left panel) ===== */
+.prize-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+@media (min-width: 1100px) {
+  .prize-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+
+.prize-card {
+  position: relative;
+  border: 1px solid #e9e9ee;
+  border-radius: 14px;
+  overflow: hidden;
+  background: #fff;
+}
+
+.prize-card.soldout {
+  opacity: 0.6;
+}
+
+.prize-meta {
+  padding: 8px 10px 10px;
+  display: grid;
+  gap: 6px;
+}
+
+.prize-num {
+  font-size: 22px;
+  font-weight: 1000;
+  letter-spacing: -0.8px;
+  color: #111;
+}
+
+/* ---------- GRID ---------- */
+.prize-grid {
+  padding: 12px;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr); /* 🔥 사진처럼 4열 */
+  gap: 14px;
+}
+
+/* ---------- CARD ---------- */
+.prize-card {
+  position: relative;
+  background: rgba(255, 255, 255, 0.85);
+  border-radius: 18px;
+  padding: 12px;
+  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.08);
+  text-align: center;
+}
+
+/* 썸네일(병풍) */
+.prize-thumb {
+  width: 100%;
+  aspect-ratio: 1 / 1;
+  overflow: hidden;
+  background: #fff;
+  margin-bottom: 8px;
+}
+
+.prize-thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* 상품명 */
+.prize-name {
+  font-size: 18px;
+  font-weight: 1000;
+  line-height: 1.2;
+  color: #222;
+  min-height: 28px;
+}
+
+/* 번호 타일 */
+.prize-num-tile {
+  height: 46px;
+  border-radius: 14px;
+  border: 2px solid rgba(0, 0, 0, 0.25);
+  background: #fff;
+  font-size: 26px;
+  font-weight: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* ===== Prize number badge (prize.png / winning.png) ===== */
+.prize-num-badge {
+  position: relative;
+  width: 100%;
+  max-width: 260px; /* 필요하면 조절 */
+  margin: 0 auto;
+  aspect-ratio: 3 / 1.6; /* 이미지 비율에 맞게 조절 가능 */
+}
+
+.prize-num-bg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  z-index: 1;
+  pointer-events: none;
+  user-select: none;
+}
+
+.prize-num-text {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 2; /* ✅ 숫자가 항상 맨 위 */
+  font-size: 30px;
+  font-weight: 1000;
+  color: #111;
+  pointer-events: none;
+  user-select: none;
+}
+
+/* 숫자 색만 변경 */
+.prize-num-text.is-winning-text {
+  color: #ffffff;
+}
+
+.logo-wrap {
+  position: relative; /* ✅ 기준점 */
+  width: 230px; /* 이미지와 동일 */
+  margin: 0 auto; /* 가운데 정렬 (원하면 제거) */
+}
+
+.logo-img {
+  width: 100%;
+  display: block;
+}
+
+.logo-text {
+  position: absolute; /* ✅ 이미지 위에 겹침 */
+  top: 0%;
+  left: 17%;
+  transform: translate(-50%, -50%);
+  z-index: 2;
+  background: linear-gradient(90deg, #ff8488, #f4ffaa);
+  -webkit-background-clip: text;
+  -webkit-text-stroke: 1px #8d1537;
+  background-clip: text;
+  color: transparent;
+  font-size: 30px;
+  font-weight: 900;
+  letter-spacing: -0.5px;
+  pointer-events: none; /* 클릭 방해 방지 */
+  white-space: nowrap;
+  transform: rotate(-8deg);
 }

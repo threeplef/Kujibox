@@ -9,7 +9,10 @@ const DEFAULT_TOTAL = 90;
 
 // localStorage keys
 const LS_KEY_PRIZES = "kuji_prizes";
+const LS_KEY_HERO = "kuji_hero";
 // const LS_KEY_NUMBERS = "kuji_numbers";
+const LS_KEY_LOGO_TEXT = "kuji_logo_text";
+const DEFAULT_LOGO_TEXT = "1";
 
 // 기본 상품 목록(기존 PRIZES 내용을 그대로 여기로 옮기세요)
 const DEFAULT_PRIZES = {
@@ -23,7 +26,14 @@ const DEFAULT_PRIZES = {
   88: { name: "상품8", remaining: 1 },
 };
 
+const DEFAULT_HERO = {
+  code: "L.O",
+  name: "라스트원",
+  img: "",
+};
+
 let PRIZES = DEFAULT_PRIZES; // 런타임에 설정값으로 덮어씀
+let HERO = DEFAULT_HERO;
 
 /***********************
  * STATE (localStorage 저장)
@@ -54,7 +64,21 @@ const histCountEl =
 const remainingCountEl =
   document.getElementById("remainingCount") ||
   document.getElementById("remainingCountModal");
+
+const logoTextEl = document.getElementById("logoText");
+const logoTextInputEl = document.getElementById("logoTextInput");
+
 const prizeListEl = document.getElementById("prizeList");
+
+const heroImgEl = document.getElementById("heroImg");
+const heroCodeEl = document.getElementById("heroCode");
+const heroNameEl = document.getElementById("heroName");
+
+const heroCodeInputEl = document.getElementById("heroCodeInput");
+const heroNameInputEl = document.getElementById("heroNameInput");
+const heroImgInputEl = document.getElementById("heroImgInput");
+const btnHeroPickFileEl = document.getElementById("btnHeroPickFile");
+const heroFileInputEl = document.getElementById("heroFileInput");
 
 const btnOpenSettingsEl = document.getElementById("btnOpenSettings");
 const settingsModalEl = document.getElementById("settingsModal");
@@ -130,6 +154,65 @@ const ACCESS_CODE = "1101";
 
 // ✅ 성공 상태 저장 키(브라우저 새로고침해도 유지하려면 localStorage)
 const ACCESS_OK_KEY = "kujibox_access_ok";
+
+/***********************
+ * IMAGE HELPERS (DataURL 용량 줄이기)
+ * localStorage는 보통 5MB 내외라, 이미지(DataURL)를 많이 저장하면
+ * QUOTA_EXCEEDED_ERR로 저장이 실패할 수 있습니다.
+ ***********************/
+async function fileToCompressedDataURL(file, opts = {}) {
+  const {
+    maxSide = 512, // 한 변 최대 길이
+    quality = 0.82, // jpeg 품질
+    mimeType = "image/png", // 용량 절감을 위해 기본 jpeg
+  } = opts;
+
+  // createImageBitmap 우선(빠름). 미지원이면 Image로 fallback.
+  const bitmap = await (async () => {
+    if ("createImageBitmap" in window) {
+      try {
+        return await createImageBitmap(file);
+      } catch {
+        // fallback
+      }
+    }
+
+    return await new Promise((resolve, reject) => {
+      const url = URL.createObjectURL(file);
+      const img = new Image();
+      img.onload = () => {
+        URL.revokeObjectURL(url);
+        resolve(img);
+      };
+      img.onerror = (e) => {
+        URL.revokeObjectURL(url);
+        reject(e);
+      };
+      img.src = url;
+    });
+  })();
+
+  const w0 = bitmap.width;
+  const h0 = bitmap.height;
+  const scale = Math.min(1, maxSide / Math.max(w0, h0));
+  const w = Math.max(1, Math.round(w0 * scale));
+  const h = Math.max(1, Math.round(h0 * scale));
+
+  const canvas = document.createElement("canvas");
+  canvas.width = w;
+  canvas.height = h;
+  const ctx = canvas.getContext("2d");
+  ctx.drawImage(bitmap, 0, 0, w, h);
+
+  // createImageBitmap로 만든 경우 메모리 해제
+  if (bitmap && typeof bitmap.close === "function") {
+    try {
+      bitmap.close();
+    } catch {}
+  }
+
+  return canvas.toDataURL(mimeType, quality);
+}
 
 /***********************
  * INIT
@@ -225,6 +308,48 @@ confirmModalEl.addEventListener("click", (e) => {
 
 btnPrizeAddRowEl.addEventListener("click", () => {
   appendPrizeRow({ num: "", name: "", remaining: 1 });
+});
+
+btnHeroPickFileEl?.addEventListener("click", () => {
+  heroFileInputEl?.click();
+});
+
+heroFileInputEl?.addEventListener("change", async () => {
+  const f = heroFileInputEl.files?.[0];
+  if (!f) return;
+
+  try {
+    const dataUrl = await fileToCompressedDataURL(f, {
+      maxSide: 768,
+      mimeType: "image/png",
+      quality: 0.92,
+    });
+
+    const blob = await (await fetch(dataUrl)).blob();
+    const key = await idbPutImageBlob(blob);
+
+    const ref = makeIdbRef(key, f.name);
+    heroImgInputEl.dataset.imgRef = ref;
+    heroImgInputEl.value = f.name;
+
+    HERO = { ...(HERO || {}), img: ref };
+    applyHeroToUI();
+
+    showToast("최상단 이미지 업로드 완료!");
+  } catch (e) {
+    console.error(e);
+    showAlert("최상단 이미지 업로드에 실패했어요.");
+  }
+});
+
+heroImgInputEl.addEventListener("input", () => {
+  delete heroImgInputEl.dataset.imgRef;
+
+  const path = heroImgInputEl.value.trim();
+  if (!path) return;
+
+  HERO = { ...HERO, img: path };
+  applyHeroToUI();
 });
 
 // 엑셀 다운로드
@@ -745,72 +870,105 @@ function renderHistoryModal() {
 function renderPrizeList() {
   prizeListEl.innerHTML = "";
 
-  // PRIZES 기준으로 표시 + 실제 당첨(오픈)된 횟수 집계
+  // ✅ 번호별로 "나온 횟수" 집계 (쿠지 뜯어서 나온 번호)
   const hitCount = {};
   for (const h of state.history) {
-    hitCount[h.number] = (hitCount[h.number] || 0) + 1;
+    const n = h.number;
+    hitCount[n] = (hitCount[n] || 0) + 1;
   }
 
   const keys = Object.keys(PRIZES)
-    .map((k) => Number(k))
+    .map(Number)
     .sort((a, b) => a - b);
 
   for (const num of keys) {
     const item = PRIZES[num];
-    const hits = hitCount[num] || 0;
 
+    const hits = hitCount[num] || 0; // ✅ 한 번이라도 나오면 1 이상
     const limit = Number.isFinite(item.remaining) ? Number(item.remaining) : 1;
     const soldOut = hits >= Math.max(1, limit);
 
-    const box = document.createElement("div");
-    box.className = "prize-item";
+    const card = document.createElement("div");
+    card.className = "prize-card";
 
-    if (soldOut) {
-      box.classList.add("soldout");
+    if (soldOut) card.classList.add("soldout");
 
-      const badge = document.createElement("div");
-      badge.className = "soldout-badge";
-      badge.textContent = "SOLD OUT";
-      box.appendChild(badge);
-    }
+    // (기존) 상품 이미지
+    const thumb = document.createElement("div");
+    thumb.className = "prize-thumb";
 
-    const left = document.createElement("div");
+    const img = document.createElement("img");
+    const raw = String(item.img ?? "").trim();
+    const src = raw
+      ? raw.includes("/") || raw.includes("://")
+        ? raw
+        : `./images/${raw}`
+      : `./images/${num}.png`;
+
+    // ✅ IndexedDB(idb://...) / URL / 경로 / 파일명 모두 대응
+    setImgSrcAsync(img, item.img, `./images/${num}.png`);
+    img.alt = item.name;
+
+    img.onerror = () => {
+      img.onerror = null;
+      img.src = "./images/placeholder.png";
+    };
+
+    thumb.appendChild(img);
+
+    // ✅ 번호 배지 (숫자가 맨 위, 밑에 prize/winning 이미지)
+    const numBadge = document.createElement("div");
+    numBadge.className = "prize-num-badge";
+
+    const bg = document.createElement("img");
+    bg.className = "prize-num-bg";
+    bg.src = hits > 0 ? "./images/winning.png" : "./images/prize.png";
+    bg.alt = hits > 0 ? "winning" : "prize";
+
+    const txt = document.createElement("div");
+    txt.className = "prize-num-text";
+    txt.textContent = String(num);
+
+    numBadge.appendChild(bg);
+    numBadge.appendChild(txt);
+
+    // 메타(상품명 + 번호배지)
+    const meta = document.createElement("div");
+    meta.className = "prize-meta";
+
     const nm = document.createElement("div");
-    nm.className = "name";
+    nm.className = "prize-name";
     nm.textContent = item.name;
 
-    const mini = document.createElement("div");
-    mini.className = "mini";
-    // mini.textContent =
-    //   `번호: ${num} · 나온 횟수: ${hits}` +
-    //   (Number.isFinite(item.remaining)
-    //     ? ` · 수량(표시): ${item.remaining}`
-    //     : "");
+    if (hits > 0) card.classList.add("is-winning");
 
-    left.appendChild(nm);
-    left.appendChild(mini);
+    if (hits > 0) txt.classList.add("is-winning-text");
 
-    const right = document.createElement("div");
-    right.className = "count";
-    right.textContent = `#${num}`;
+    meta.appendChild(nm);
+    meta.appendChild(numBadge);
 
-    box.appendChild(left);
-    box.appendChild(right);
-    prizeListEl.appendChild(box);
+    card.appendChild(thumb);
+    card.appendChild(meta);
+
+    prizeListEl.appendChild(card);
   }
 }
 
-// function parseNumberList(text) {
-//   if (!text) return [];
-//   return text
-//     .split(/[\s,]+/g)
-//     .map((s) => s.trim())
-//     .filter(Boolean)
-//     .map((s) => Number(s))
-//     .filter((n) => Number.isFinite(n));
-// }
+function applyHeroToUI() {
+  const heroImg = document.querySelector("#heroImg");
+  if (!heroImg) return;
+
+  // ✅ HERO도 IndexedDB(idb://...) 지원
+  setImgSrcAsync(heroImg, HERO.img, "./images/lo.png");
+}
 
 function loadConfigFromStorage() {
+  const savedLogoText = localStorage.getItem(LS_KEY_LOGO_TEXT);
+  const logoText = savedLogoText ?? DEFAULT_LOGO_TEXT;
+
+  if (logoTextEl) logoTextEl.textContent = logoText;
+  if (logoTextInputEl) logoTextInputEl.value = logoText;
+
   // PRIZES
   const rawPrizes = localStorage.getItem(LS_KEY_PRIZES);
   if (rawPrizes) {
@@ -824,11 +982,40 @@ function loadConfigFromStorage() {
     PRIZES = DEFAULT_PRIZES;
   }
 
+  // HERO
+  const rawHero = localStorage.getItem(LS_KEY_HERO);
+  if (rawHero) {
+    try {
+      const obj = JSON.parse(rawHero);
+      if (obj && typeof obj === "object") HERO = obj;
+    } catch {}
+  } else {
+    HERO = DEFAULT_HERO;
+  }
+
   // modal 채우기
   settingsPrizesEl.value = JSON.stringify(PRIZES, null, 2);
   // settingsNumbersEl.value = localStorage.getItem(LS_KEY_NUMBERS) || "";
+
+  // 설정 UI 채우기
+  if (heroCodeInputEl) heroCodeInputEl.value = String(HERO.code ?? "");
+  if (heroNameInputEl) heroNameInputEl.value = String(HERO.name ?? "");
+  // ✅ HERO.img가 idb://...면 input엔 파일명만 보여주고, 실제 참조는 dataset에 보관
+  if (heroImgInputEl) {
+    const raw = String(HERO.img ?? "");
+    const p = parseIdbRef(raw);
+    if (p?.key) {
+      heroImgInputEl.dataset.imgRef = raw;
+      heroImgInputEl.value = p.name || "(업로드됨)";
+    } else {
+      delete heroImgInputEl.dataset.imgRef;
+      heroImgInputEl.value = raw;
+    }
+  }
+
   // 직관 UI 채우기
   renderPrizeEditorFromPrizes();
+  applyHeroToUI();
   // renderPoolChips();
 }
 
@@ -844,6 +1031,12 @@ function closeSettings() {
 }
 
 function saveSettingsAndApply() {
+  if (logoTextInputEl) {
+    const t = logoTextInputEl.value.trim();
+    localStorage.setItem(LS_KEY_LOGO_TEXT, t);
+    if (logoTextEl) logoTextEl.textContent = t;
+  }
+
   // prizes: 에디터에서 읽기
   const nextPrizes = normalizePrizesObject(readPrizesFromEditor());
   if (Object.keys(nextPrizes).length === 0) {
@@ -854,14 +1047,41 @@ function saveSettingsAndApply() {
   // 숨김 textarea에도 동기화(호환/디버깅용)
   settingsPrizesEl.value = JSON.stringify(nextPrizes, null, 2);
 
-  localStorage.setItem(LS_KEY_PRIZES, JSON.stringify(nextPrizes));
+  try {
+    localStorage.setItem(LS_KEY_PRIZES, JSON.stringify(nextPrizes));
+  } catch (e) {
+    // ✅ 이미지(DataURL) 누적 등으로 localStorage 용량을 넘기면 여기로 옴
+    showAlert(
+      "저장이 실패했어요(브라우저 저장공간이 가득 찼을 가능성이 커요).\n\n해결 방법:\n1) 상품 이미지들은 파일로 '업로드(파일 선택)' 대신 ./images/폴더 경로로 넣기\n2) 또는 이미지 용량을 더 줄여서 다시 선택하기(현재는 자동 압축을 적용했지만, 아주 큰 이미지가 많으면 한계가 있어요)."
+    );
+    return;
+  }
   // localStorage.setItem(LS_KEY_NUMBERS, settingsNumbersEl.value || "");
 
-  PRIZES = nextPrizes;
+  const nextHero = {
+    code: String(heroCodeInputEl?.value ?? "").trim(),
+    name: String(heroNameInputEl?.value ?? "").trim(),
+    img: String(
+      heroImgInputEl?.dataset?.imgRef ?? heroImgInputEl?.value ?? ""
+    ).trim(),
+  };
+  try {
+    localStorage.setItem(LS_KEY_HERO, JSON.stringify(nextHero));
+  } catch {
+    showAlert(
+      "저장이 실패했어요(브라우저 저장공간이 가득 찼을 가능성이 커요).\n\n최상단 피규어 이미지도 파일 업로드 대신 ./images/ 경로를 사용하거나, 더 작은 이미지로 다시 선택해 주세요."
+    );
+    return;
+  }
 
+  PRIZES = nextPrizes;
+  HERO = nextHero;
+
+  applyHeroToUI();
   renderAll();
   closeSettings();
 }
+
 function normalizePrizesObject(obj) {
   // {번호: {name, remaining}} 형태만 통과
   const out = {};
@@ -878,7 +1098,12 @@ function normalizePrizesObject(obj) {
       v.remaining === undefined || v.remaining === null || v.remaining === ""
         ? 1
         : Number(v.remaining);
-    out[num] = { name, remaining: Number.isFinite(remaining) ? remaining : 1 };
+    const img = String(v.img ?? "").trim();
+    out[num] = {
+      name,
+      img,
+      remaining: Number.isFinite(remaining) ? remaining : 1,
+    };
   }
   return out;
 }
@@ -929,7 +1154,7 @@ function clearPrizeRows() {
   prizeRowsEl.innerHTML = "";
 }
 
-function appendPrizeRow({ num, name, remaining }) {
+function appendPrizeRow({ num = "", name = "", img = "", remaining = 1 }) {
   const row = document.createElement("div");
   row.className = "prize-row";
 
@@ -937,11 +1162,87 @@ function appendPrizeRow({ num, name, remaining }) {
   inNum.type = "number";
   inNum.placeholder = "번호";
   inNum.value = num;
+  inNum.className = "in-num";
 
   const inName = document.createElement("input");
   inName.type = "text";
   inName.placeholder = "상품명";
   inName.value = name;
+  inName.className = "in-name";
+
+  // 이미지 입력 (경로)
+  const imgWrap = document.createElement("div");
+  imgWrap.style.display = "flex";
+  imgWrap.style.gap = "6px";
+  imgWrap.style.alignItems = "center";
+
+  const inImg = document.createElement("input");
+  inImg.type = "text";
+  inImg.placeholder = "예) ./images/prize_01.png 또는 prize_01.png";
+  // ✅ 저장값(img)이 idb://...면: input엔 파일명만, 실제 참조는 dataset에
+  if (typeof img === "string" && img.startsWith("idb://")) {
+    const p = parseIdbRef(img);
+    inImg.dataset.imgRef = img;
+    inImg.value = p?.name || "(업로드됨)";
+  } else {
+    delete inImg.dataset.imgRef;
+    inImg.value = img;
+  }
+  inImg.className = "in-img";
+  // 사용자가 직접 입력/수정하면 업로드 참조는 해제(경로 모드로 전환)
+  inImg.addEventListener("input", () => {
+    delete inImg.dataset.imgRef;
+  });
+
+  // ✅ 파일 선택(용량 저장 X): 파일명만 입력칸에 넣어줍니다.
+  const fileInput = document.createElement("input");
+  fileInput.type = "file";
+  fileInput.accept = "image/*";
+  fileInput.style.display = "none";
+
+  const btnPick = document.createElement("button");
+  btnPick.type = "button";
+  btnPick.className = "ghost";
+  btnPick.textContent = "파일";
+  btnPick.style.width = "55px";
+  btnPick.style.flexShrink = "0";
+  btnPick.addEventListener("click", () => fileInput.click());
+
+  fileInput.addEventListener("change", async () => {
+    const f = fileInput.files?.[0];
+    if (!f) return;
+
+    try {
+      // 필요하면 용량 줄이기(권장): 이미 있는 압축함수 사용(결과는 DataURL)
+      const dataUrl = await fileToCompressedDataURL(f, {
+        maxSide: 768,
+        mimeType: "image/png",
+        quality: 0.92,
+      });
+
+      // DataURL -> Blob 변환
+      const blob = await (await fetch(dataUrl)).blob();
+
+      // ✅ IndexedDB에 저장
+      const key = await idbPutImageBlob(blob);
+
+      // ✅ 저장값(참조)은 dataset에
+      const ref = makeIdbRef(key, f.name);
+      inImg.dataset.imgRef = ref;
+
+      // ✅ 사용자에겐 파일명만 보여주기
+      inImg.value = f.name;
+
+      showToast("이미지 업로드 완료!");
+    } catch (e) {
+      console.error(e);
+      showAlert("이미지 업로드에 실패했어요. 다른 파일로 다시 시도해 주세요.");
+    }
+  });
+
+  imgWrap.appendChild(inImg);
+  imgWrap.appendChild(btnPick);
+  imgWrap.appendChild(fileInput);
 
   const inRemain = document.createElement("input");
   inRemain.type = "number";
@@ -949,14 +1250,17 @@ function appendPrizeRow({ num, name, remaining }) {
   inRemain.min = "1";
   inRemain.step = "1";
   inRemain.value = remaining ?? 1;
+  inRemain.className = "in-remain";
 
   const btnDel = document.createElement("button");
+  btnDel.type = "button";
   btnDel.className = "ghost btn-del";
   btnDel.textContent = "삭제";
   btnDel.addEventListener("click", () => row.remove());
 
   row.appendChild(inNum);
   row.appendChild(inName);
+  row.appendChild(imgWrap);
   row.appendChild(inRemain);
   row.appendChild(btnDel);
 
@@ -968,25 +1272,45 @@ function renderPrizeEditorFromPrizes() {
   const keys = Object.keys(PRIZES)
     .map(Number)
     .sort((a, b) => a - b);
+
   for (const num of keys) {
     const it = PRIZES[num];
-    appendPrizeRow({ num, name: it.name, remaining: it.remaining ?? 1 });
+    appendPrizeRow({
+      num,
+      name: it.name,
+      img: it.img ?? "",
+      remaining: it.remaining ?? 1,
+    });
   }
-  if (keys.length === 0) appendPrizeRow({ num: "", name: "", remaining: 1 });
+
+  if (keys.length === 0)
+    appendPrizeRow({ num: "", name: "", img: "", remaining: 1 });
 }
 
 function readPrizesFromEditor() {
   const rows = prizeRowsEl.querySelectorAll(".prize-row");
   const out = {};
+
   for (const row of rows) {
-    const inputs = row.querySelectorAll("input");
-    const num = Number(inputs[0].value);
-    const name = String(inputs[1].value || "").trim();
-    const remaining = Number(inputs[2].value);
+    const numEl = row.querySelector(".in-num");
+    const nameEl = row.querySelector(".in-name");
+    const imgEl = row.querySelector(".in-img");
+    const remainEl = row.querySelector(".in-remain");
+
+    const num = Number(numEl?.value);
+    const name = String(nameEl?.value || "").trim();
+    const img = String(imgEl?.dataset?.imgRef ?? imgEl?.value ?? "").trim();
+    const remaining = Number(remainEl?.value);
 
     if (!Number.isFinite(num) || !name) continue;
-    out[num] = { name, remaining: Number.isFinite(remaining) ? remaining : 1 };
+
+    out[num] = {
+      name,
+      img,
+      remaining: Number.isFinite(remaining) ? remaining : 1,
+    };
   }
+
   return out;
 }
 
@@ -1152,3 +1476,122 @@ function loadState() {
 function saveState() {
   localStorage.setItem(LS_KEY, JSON.stringify(state));
 }
+
+/***********************
+ * INDEXEDDB (이미지 저장)
+ ***********************/
+const IDB_NAME = "kuji_db";
+const IDB_VERSION = 1;
+const IDB_STORE_IMAGES = "images";
+
+let __idbPromise = null;
+function openKujiDB() {
+  if (__idbPromise) return __idbPromise;
+  __idbPromise = new Promise((resolve, reject) => {
+    const req = indexedDB.open(IDB_NAME, IDB_VERSION);
+    req.onupgradeneeded = () => {
+      const db = req.result;
+      if (!db.objectStoreNames.contains(IDB_STORE_IMAGES)) {
+        db.createObjectStore(IDB_STORE_IMAGES);
+      }
+    };
+    req.onsuccess = () => resolve(req.result);
+    req.onerror = () => reject(req.error);
+  });
+  return __idbPromise;
+}
+
+async function idbPutImageBlob(blob) {
+  const db = await openKujiDB();
+  const key =
+    crypto?.randomUUID?.() ??
+    `${Date.now()}_${Math.random().toString(16).slice(2)}`;
+
+  await new Promise((resolve, reject) => {
+    const tx = db.transaction(IDB_STORE_IMAGES, "readwrite");
+    tx.objectStore(IDB_STORE_IMAGES).put(blob, key);
+    tx.oncomplete = () => resolve();
+    tx.onerror = () => reject(tx.error);
+  });
+
+  return key;
+}
+
+async function idbGetImageBlob(key) {
+  const db = await openKujiDB();
+  return await new Promise((resolve, reject) => {
+    const tx = db.transaction(IDB_STORE_IMAGES, "readonly");
+    const req = tx.objectStore(IDB_STORE_IMAGES).get(key);
+    req.onsuccess = () => resolve(req.result || null);
+    req.onerror = () => reject(req.error);
+  });
+}
+
+async function idbDeleteImageBlob(key) {
+  const db = await openKujiDB();
+  await new Promise((resolve, reject) => {
+    const tx = db.transaction(IDB_STORE_IMAGES, "readwrite");
+    tx.objectStore(IDB_STORE_IMAGES).delete(key);
+    tx.oncomplete = () => resolve();
+    tx.onerror = () => reject(tx.error);
+  });
+}
+
+function makeIdbRef(key, fileName) {
+  const name = encodeURIComponent(fileName || "");
+  return `idb://${key}?name=${name}`;
+}
+
+function parseIdbRef(ref) {
+  if (!ref || typeof ref !== "string") return null;
+  if (!ref.startsWith("idb://")) return null;
+  // idb://<key>?name=...
+  const without = ref.slice("idb://".length);
+  const [keyPart, query = ""] = without.split("?");
+  const params = new URLSearchParams(query);
+  const name = params.get("name") ? decodeURIComponent(params.get("name")) : "";
+  return { key: keyPart, name };
+}
+
+// blob->objectURL 캐시 (렌더링 성능/중복 호출 방지)
+const __imgUrlCache = new Map(); // key -> objectURL
+async function resolveImgSrc(imgRef, fallback) {
+  const raw = String(imgRef || "").trim();
+  if (!raw) return fallback;
+
+  // IndexedDB 참조
+  const parsed = parseIdbRef(raw);
+  if (parsed?.key) {
+    if (__imgUrlCache.has(parsed.key)) return __imgUrlCache.get(parsed.key);
+
+    const blob = await idbGetImageBlob(parsed.key);
+    if (!blob) return fallback;
+
+    const url = URL.createObjectURL(blob);
+    __imgUrlCache.set(parsed.key, url);
+    return url;
+  }
+
+  // 기존 로직 (url/data/path/파일명)
+  if (raw.startsWith("data:") || raw.includes("://") || raw.includes("/"))
+    return raw;
+  return `./images/${raw}`;
+}
+
+function setImgSrcAsync(imgEl, imgRef, fallback) {
+  if (!imgEl) return;
+  imgEl.src = fallback;
+  resolveImgSrc(imgRef, fallback)
+    .then((src) => {
+      imgEl.src = src;
+    })
+    .catch(() => {
+      imgEl.src = fallback;
+    });
+}
+
+// (선택) 페이지 떠날 때 objectURL 정리
+window.addEventListener("beforeunload", () => {
+  for (const url of __imgUrlCache.values()) URL.revokeObjectURL(url);
+  __imgUrlCache.clear();
+});

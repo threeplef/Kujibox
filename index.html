@@ -9,7 +9,7 @@
   </head>
 
   <body>
-    <header>
+    <!-- <header>
       <div class="brand">
         <div style="display: flex; align-items: center; gap: 10px">
           <div style="text-align: center">
@@ -17,12 +17,12 @@
           </div>
         </div>
       </div>
-    </header>
+    </header> -->
 
     <main>
       <div class="layout">
         <!-- LEFT: PRIZE LIST -->
-        <section class="panel">
+        <!-- <section class="panel">
           <div class="top-actions">
             <h3>상품 목록</h3>
             <button class="ghost1" id="btnOpenSettings">설정</button>
@@ -32,6 +32,48 @@
               ※ 상품 목록 변경 가능 / 중간에 추가 가능
             </div>
             <div id="prizeList"></div>
+          </div>
+        </section> -->
+        <!-- LEFT: PRIZE BOARD -->
+        <section class="panel prize-panel">
+          <div class="content">
+            <!-- 상단 메인 피규어(설정에서 변경 가능) -->
+            <div class="left-hero">
+              <div class="left-hero-text">
+                <div class="logo-wrap">
+                  <img
+                    src="./images/logo2.png"
+                    class="logo-img"
+                    style="width: 230px"
+                  />
+                  <div
+                    class="logo-text black-han-sans-regular"
+                    id="logoText"
+                  ></div>
+                </div>
+
+                <div class="top-actions1">
+                  <button class="ghost2" id="btnOpenSettings">
+                    상품 목록 설정
+                  </button>
+                </div>
+              </div>
+
+              <div class="left-hero-figure">
+                <img
+                  id="heroImg"
+                  src="./images/lo.png"
+                  alt="메인 피규어"
+                  loading="lazy"
+                />
+                <div class="hero-label">
+                  <span class="hero-chip" id="heroCode">L.O</span>
+                  <span class="hero-name" id="heroName">코토부키야 네즈코</span>
+                </div>
+              </div>
+            </div>
+
+            <div id="prizeList" class="prize-grid"></div>
           </div>
         </section>
 
@@ -217,10 +259,17 @@
               </div> -->
 
               <!-- 상품 목록 -->
+              <div class="cfg-row">
+                <input
+                  type="text"
+                  id="logoTextInput"
+                  placeholder="해당 자체쿠지가 몇 탄인지 작성해주세요."
+                />
+              </div>
               <div class="cfg-block">
-                <div class="cfg-title">상품 목록</div>
+                <div class="cfg-title">상품 목록 설정</div>
                 <div class="muted" style="font-size: 12px; margin-bottom: 8px">
-                  “번호 / 상품명 / 수량”만 입력하면 됩니다. (수량은 기본 1)
+                  번호/이름/이미지를 바꾸면 왼쪽 상단 피규어 영역이 바뀝니다.
                 </div>
 
                 <div class="cfg-row">
@@ -231,6 +280,7 @@
                   <div class="prize-head">
                     <div>번호</div>
                     <div>상품명</div>
+                    <div>이미지</div>
                     <div>수량</div>
                     <div></div>
                   </div>
@@ -243,6 +293,49 @@
                   class="ta hidden"
                   rows="10"
                 ></textarea>
+              </div>
+
+              <!-- <div class="cfg-row">
+                <input
+                  id="heroCodeInput"
+                  type="text"
+                  placeholder="번호 (예: L.O)"
+                />
+                <input
+                  id="heroNameInput"
+                  type="text"
+                  placeholder="상품명 (예: 코토부키야 네즈코)"
+                />
+              </div>
+              <div class="cfg-row">
+                <input
+                  id="heroImgInput"
+                  type="text"
+                  placeholder="이미지 경로 (예: ./images/hero.png)"
+                />
+              </div> -->
+              <div class="cfg-row1">
+                <input id="heroCodeInput" type="text" placeholder="L.O" />
+                <input id="heroNameInput" type="text" placeholder="상품명" />
+              </div>
+
+              <div class="cfg-row2">
+                <input
+                  type="text"
+                  id="heroImgInput"
+                  placeholder="이미지 경로 또는 파일 선택"
+                />
+
+                <button class="ghost" type="button" id="btnHeroPickFile">
+                  파일
+                </button>
+
+                <input
+                  type="file"
+                  id="heroFileInput"
+                  accept="image/*"
+                  style="display: none"
+                />
               </div>
             </div>
 
@@ -349,10 +442,12 @@
         </div>
       </div>
     </main>
+
     <!-- TOAST -->
     <div id="toast" class="toast hidden"></div>
 
     <script type="module" src="script.js"></script>
+
     <!-- SheetJS (xlsx) for Excel download -->
     <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
   </body>
