@@ -224,6 +224,61 @@ async function fileToCompressedDataURL(file, opts = {}) {
   return canvas.toDataURL(mimeType, quality);
 }
 
+async function saveImageFileAndMakeRef(file, opts = {}) {
+  const dataUrl = await fileToCompressedDataURL(file, {
+    maxSide: 768,
+    mimeType: "image/png",
+    quality: 0.92,
+    ...opts,
+  });
+
+  const blob = await (await fetch(dataUrl)).blob();
+  const key = await idbPutImageBlob(blob);
+  return makeIdbRef(key, file.name);
+}
+
+function bindImagePicker({
+  textInput,
+  fileInput,
+  pickButton,
+  onImageChange,
+  successMessage = "이미지 업로드 완료!",
+  failureMessage = "이미지 업로드에 실패했어요.",
+}) {
+  if (pickButton && fileInput) {
+    pickButton.addEventListener("click", () => fileInput.click());
+  }
+
+  if (textInput) {
+    textInput.addEventListener("input", () => {
+      delete textInput.dataset.imgRef;
+      onImageChange?.(normalizeImageRef(textInput.value));
+    });
+  }
+
+  if (fileInput) {
+    fileInput.addEventListener("change", async () => {
+      const f = fileInput.files?.[0];
+      if (!f) return;
+
+      try {
+        const ref = await saveImageFileAndMakeRef(f);
+        if (textInput) {
+          textInput.dataset.imgRef = ref;
+          textInput.value = f.name;
+        }
+        onImageChange?.(ref);
+        showToast(successMessage);
+      } catch (e) {
+        console.error(e);
+        showAlert(failureMessage);
+      } finally {
+        fileInput.value = "";
+      }
+    });
+  }
+}
+
 /***********************
  * INIT
  ***********************/
@@ -321,46 +376,16 @@ btnPrizeAddRowEl.addEventListener("click", () => {
   appendPrizeRow({ num: "", name: "", remaining: 1 });
 });
 
-btnHeroPickFileEl?.addEventListener("click", () => {
-  heroFileInputEl?.click();
-});
-
-heroFileInputEl?.addEventListener("change", async () => {
-  const f = heroFileInputEl.files?.[0];
-  if (!f) return;
-
-  try {
-    const dataUrl = await fileToCompressedDataURL(f, {
-      maxSide: 768,
-      mimeType: "image/png",
-      quality: 0.92,
-    });
-
-    const blob = await (await fetch(dataUrl)).blob();
-    const key = await idbPutImageBlob(blob);
-
-    const ref = makeIdbRef(key, f.name);
-    heroImgInputEl.dataset.imgRef = ref;
-    heroImgInputEl.value = f.name;
-
-    HERO = { ...(HERO || {}), img: ref };
+bindImagePicker({
+  textInput: heroImgInputEl,
+  fileInput: heroFileInputEl,
+  pickButton: btnHeroPickFileEl,
+  onImageChange: (img) => {
+    HERO = { ...(HERO || {}), img };
     applyHeroToUI();
-
-    showToast("최상단 이미지 업로드 완료!");
-  } catch (e) {
-    console.error(e);
-    showAlert("최상단 이미지 업로드에 실패했어요.");
-  }
-});
-
-heroImgInputEl.addEventListener("input", () => {
-  delete heroImgInputEl.dataset.imgRef;
-
-  const path = heroImgInputEl.value.trim();
-  if (!path) return;
-
-  HERO = { ...HERO, img: path };
-  applyHeroToUI();
+  },
+  successMessage: "라스트원 이미지 업로드 완료!",
+  failureMessage: "라스트원 이미지 업로드에 실패했어요.",
 });
 
 // 엑셀 다운로드
@@ -376,7 +401,7 @@ btnRebuildEl.addEventListener("click", async () => {
   }
 
   const ok = await showConfirm(
-    "쿠지를 재생성하면 오픈 현황 및 기록이 모두 초기화됩니다.\n진행할까요?"
+    "쿠지를 재생성하면 오픈 현황 및 기록이 모두 초기화됩니다.\n진행할까요?",
   );
   if (!ok) return;
 
@@ -630,7 +655,7 @@ function showWinIfPrizeNumber(n) {
   // (선택) 품절/잔여 안내: 현재 history 기준 + 이번 1회 반영해서 계산
   const alreadyHits = state.history.reduce(
     (acc, h) => (h.number === n ? acc + 1 : acc),
-    0
+    0,
   );
   const limit = Number.isFinite(prize?.remaining) ? Number(prize.remaining) : 1;
   const afterHits = alreadyHits + 1;
@@ -785,7 +810,7 @@ function startConfetti(durationMs = 1200) {
           p.x - p.size,
           p.y - p.size * 0.7,
           p.size * 2,
-          p.size * 1.4
+          p.size * 1.4,
         );
       }
     }
@@ -1025,50 +1050,86 @@ function renderGrid() {
 //   }
 // }
 
-function renderHistory() {
-  if (!historyBodyEl) return; // ✅ 기록 UI가 없으면 렌더 스킵
-  historyBodyEl.innerHTML = "";
-
-  // 오래된→최신 순으로 누적해야 "17,24,35" 순서가 자연스러움
+function buildHistoryGroupsByName() {
   const rowsOldToNew = [...state.history].reverse();
-
-  // name -> number[]
-  const byName = new Map();
+  const grouped = new Map();
   const order = [];
 
   for (const r of rowsOldToNew) {
     const name = String(r.name ?? "").trim() || "이름없음";
-    if (!byName.has(name)) {
-      byName.set(name, []);
+    const number = r.number;
+
+    if (!grouped.has(name)) {
+      grouped.set(name, { totalCount: 0, segments: [] });
       order.push(name);
     }
-    byName.get(name).push(r.number);
+
+    const entry = grouped.get(name);
+    const lastSegment = entry.segments[entry.segments.length - 1];
+
+    if (!lastSegment || lastSegment.closed) {
+      entry.segments.push({ numbers: [number], closed: false });
+    } else {
+      lastSegment.numbers.push(number);
+    }
+
+    entry.totalCount += 1;
+
+    for (const [otherName, otherEntry] of grouped.entries()) {
+      if (otherName === name) continue;
+      const otherLast = otherEntry.segments[otherEntry.segments.length - 1];
+      if (otherLast) otherLast.closed = true;
+    }
   }
 
-  for (const name of order) {
-    const nums = byName.get(name);
+  return { grouped, order };
+}
 
-    const tr = document.createElement("tr");
+function formatHistoryName(name, totalCount) {
+  const count = Number(totalCount) || 0;
+  return `${name} (${count})`;
+}
 
-    const tdName = document.createElement("td");
-    tdName.textContent = name;
+function appendHistoryNumbers(tdNum, segments) {
+  tdNum.innerHTML = "";
 
-    const tdNum = document.createElement("td");
-    tdNum.innerHTML = ""; // span으로 넣을 거라 비움
+  segments.forEach((segment, segmentIdx) => {
+    if (segmentIdx > 0) {
+      tdNum.appendChild(document.createTextNode(" / "));
+    }
 
-    nums.forEach((n, idx) => {
-      if (idx > 0) tdNum.appendChild(document.createTextNode(","));
+    segment.numbers.forEach((n, idx) => {
+      if (idx > 0) tdNum.appendChild(document.createTextNode(", "));
 
       const span = document.createElement("span");
       span.textContent = String(n);
 
-      // ✅ 당첨 번호(PRIZES에 있는 번호)면 빨간/굵게
       if (PRIZES && Object.prototype.hasOwnProperty.call(PRIZES, n)) {
         span.className = "num-win";
       }
 
       tdNum.appendChild(span);
     });
+  });
+}
+
+function renderHistory() {
+  if (!historyBodyEl) return; // ✅ 기록 UI가 없으면 렌더 스킵
+  historyBodyEl.innerHTML = "";
+
+  const { grouped, order } = buildHistoryGroupsByName();
+
+  for (const name of order) {
+    const entry = grouped.get(name);
+    if (!entry) continue;
+
+    const tr = document.createElement("tr");
+
+    const tdName = document.createElement("td");
+    tdName.textContent = formatHistoryName(name, entry.totalCount);
+
+    const tdNum = document.createElement("td");
+    appendHistoryNumbers(tdNum, entry.segments);
 
     tr.appendChild(tdName);
     tr.appendChild(tdNum);
@@ -1096,41 +1157,19 @@ function renderHistoryModal() {
   // 테이블
   historyBodyModalEl.innerHTML = "";
 
-  const rowsOldToNew = [...state.history].reverse();
-
-  const byName = new Map();
-  const order = [];
-
-  for (const r of rowsOldToNew) {
-    const name = String(r.name ?? "").trim() || "이름없음";
-    if (!byName.has(name)) {
-      byName.set(name, []);
-      order.push(name);
-    }
-    byName.get(name).push(r.number);
-  }
+  const { grouped, order } = buildHistoryGroupsByName();
 
   for (const name of order) {
-    const nums = byName.get(name);
+    const entry = grouped.get(name);
+    if (!entry) continue;
 
     const tr = document.createElement("tr");
 
     const tdName = document.createElement("td");
-    tdName.textContent = name;
+    tdName.textContent = formatHistoryName(name, entry.totalCount);
 
     const tdNum = document.createElement("td");
-    tdNum.innerHTML = "";
-
-    nums.forEach((n, idx) => {
-      if (idx > 0) tdNum.appendChild(document.createTextNode(","));
-
-      const span = document.createElement("span");
-      span.textContent = String(n);
-      if (PRIZES && Object.prototype.hasOwnProperty.call(PRIZES, n)) {
-        span.className = "num-win";
-      }
-      tdNum.appendChild(span);
-    });
+    appendHistoryNumbers(tdNum, entry.segments);
 
     tr.appendChild(tdName);
     tr.appendChild(tdNum);
@@ -1169,12 +1208,6 @@ function renderPrizeList() {
     thumb.className = "prize-thumb";
 
     const img = document.createElement("img");
-    const raw = String(item.img ?? "").trim();
-    const src = raw
-      ? raw.includes("/") || raw.includes("://")
-        ? raw
-        : `./images/${raw}`
-      : `./images/${num}.png`;
 
     // ✅ IndexedDB(idb://...) / URL / 경로 / 파일명 모두 대응
     setImgSrcAsync(img, item.img, `./images/${num}.png`);
@@ -1227,10 +1260,23 @@ function renderPrizeList() {
 
 function applyHeroToUI() {
   const heroImg = document.querySelector("#heroImg");
+  const heroCode = document.querySelector("#heroCode");
+  const heroName = document.querySelector("#heroName");
+
+  if (heroCode) {
+    heroCode.textContent =
+      String(HERO?.code ?? DEFAULT_HERO.code).trim() || DEFAULT_HERO.code;
+  }
+
+  if (heroName) {
+    heroName.textContent =
+      String(HERO?.name ?? DEFAULT_HERO.name).trim() || DEFAULT_HERO.name;
+  }
+
   if (!heroImg) return;
 
   // ✅ HERO도 IndexedDB(idb://...) 지원
-  setImgSrcAsync(heroImg, HERO.img, "./images/lo.png");
+  setImgSrcAsync(heroImg, HERO?.img, "./images/lo.png");
 }
 
 function loadConfigFromStorage() {
@@ -1323,7 +1369,7 @@ function saveSettingsAndApply() {
   } catch (e) {
     // ✅ 이미지(DataURL) 누적 등으로 localStorage 용량을 넘기면 여기로 옴
     showAlert(
-      "저장이 실패했어요(브라우저 저장공간이 가득 찼을 가능성이 커요).\n\n해결 방법:\n1) 상품 이미지들은 파일로 '업로드(파일 선택)' 대신 ./images/폴더 경로로 넣기\n2) 또는 이미지 용량을 더 줄여서 다시 선택하기(현재는 자동 압축을 적용했지만, 아주 큰 이미지가 많으면 한계가 있어요)."
+      "저장이 실패했어요(브라우저 저장공간이 가득 찼을 가능성이 커요).\n\n해결 방법:\n1) 상품 이미지들은 파일로 '업로드(파일 선택)' 대신 ./images/폴더 경로로 넣기\n2) 또는 이미지 용량을 더 줄여서 다시 선택하기(현재는 자동 압축을 적용했지만, 아주 큰 이미지가 많으면 한계가 있어요).",
     );
     return;
   }
@@ -1332,15 +1378,15 @@ function saveSettingsAndApply() {
   const nextHero = {
     code: String(heroCodeInputEl?.value ?? "").trim(),
     name: String(heroNameInputEl?.value ?? "").trim(),
-    img: String(
-      heroImgInputEl?.dataset?.imgRef ?? heroImgInputEl?.value ?? ""
-    ).trim(),
+    img: normalizeImageRef(
+      String(heroImgInputEl?.dataset?.imgRef ?? heroImgInputEl?.value ?? ""),
+    ),
   };
   try {
     localStorage.setItem(LS_KEY_HERO, JSON.stringify(nextHero));
   } catch {
     showAlert(
-      "저장이 실패했어요(브라우저 저장공간이 가득 찼을 가능성이 커요).\n\n최상단 피규어 이미지도 파일 업로드 대신 ./images/ 경로를 사용하거나, 더 작은 이미지로 다시 선택해 주세요."
+      "저장이 실패했어요(브라우저 저장공간이 가득 찼을 가능성이 커요).\n\n최상단 피규어 이미지도 파일 업로드 대신 ./images/ 경로를 사용하거나, 더 작은 이미지로 다시 선택해 주세요.",
     );
     return;
   }
@@ -1351,6 +1397,28 @@ function saveSettingsAndApply() {
   applyHeroToUI();
   renderAll();
   closeSettings();
+}
+
+function normalizeImageRef(value) {
+  const raw = String(value ?? "").trim();
+  if (!raw) return "";
+
+  if (raw.startsWith("idb://") || raw.startsWith("data:")) {
+    return raw;
+  }
+
+  let cleaned = raw.replace(/^(["'])(.*)\1$/, "$2").trim();
+  cleaned = cleaned.replace(/\\/g, "/");
+
+  // input[type=file]에서 흔한 가짜 경로 제거
+  if (/^[a-zA-Z]:\/fakepath\//.test(cleaned)) {
+    cleaned = cleaned.split("/").pop() || "";
+  }
+
+  // 이미 ./images/ 또는 images/를 여러 번 붙인 경우 정리
+  cleaned = cleaned.replace(/^(\.\/)?images\/(?:images\/)+/i, "images/");
+
+  return cleaned;
 }
 
 function normalizePrizesObject(obj) {
@@ -1369,7 +1437,7 @@ function normalizePrizesObject(obj) {
       v.remaining === undefined || v.remaining === null || v.remaining === ""
         ? 1
         : Number(v.remaining);
-    const img = String(v.img ?? "").trim();
+    const img = normalizeImageRef(String(v.img ?? ""));
     out[num] = {
       name,
       img,
@@ -1460,12 +1528,7 @@ function appendPrizeRow({ num = "", name = "", img = "", remaining = 1 }) {
     inImg.value = img;
   }
   inImg.className = "in-img";
-  // 사용자가 직접 입력/수정하면 업로드 참조는 해제(경로 모드로 전환)
-  inImg.addEventListener("input", () => {
-    delete inImg.dataset.imgRef;
-  });
-
-  // ✅ 파일 선택(용량 저장 X): 파일명만 입력칸에 넣어줍니다.
+  // ✅ 라스트원과 같은 방식으로 업로드/경로입력 둘 다 지원
   const fileInput = document.createElement("input");
   fileInput.type = "file";
   fileInput.accept = "image/*";
@@ -1477,38 +1540,14 @@ function appendPrizeRow({ num = "", name = "", img = "", remaining = 1 }) {
   btnPick.textContent = "파일";
   btnPick.style.width = "55px";
   btnPick.style.flexShrink = "0";
-  btnPick.addEventListener("click", () => fileInput.click());
 
-  fileInput.addEventListener("change", async () => {
-    const f = fileInput.files?.[0];
-    if (!f) return;
-
-    try {
-      // 필요하면 용량 줄이기(권장): 이미 있는 압축함수 사용(결과는 DataURL)
-      const dataUrl = await fileToCompressedDataURL(f, {
-        maxSide: 768,
-        mimeType: "image/png",
-        quality: 0.92,
-      });
-
-      // DataURL -> Blob 변환
-      const blob = await (await fetch(dataUrl)).blob();
-
-      // ✅ IndexedDB에 저장
-      const key = await idbPutImageBlob(blob);
-
-      // ✅ 저장값(참조)은 dataset에
-      const ref = makeIdbRef(key, f.name);
-      inImg.dataset.imgRef = ref;
-
-      // ✅ 사용자에겐 파일명만 보여주기
-      inImg.value = f.name;
-
-      showToast("이미지 업로드 완료!");
-    } catch (e) {
-      console.error(e);
-      showAlert("이미지 업로드에 실패했어요. 다른 파일로 다시 시도해 주세요.");
-    }
+  bindImagePicker({
+    textInput: inImg,
+    fileInput,
+    pickButton: btnPick,
+    successMessage: "상품 이미지 업로드 완료!",
+    failureMessage:
+      "상품 이미지 업로드에 실패했어요. 다른 파일로 다시 시도해 주세요.",
   });
 
   imgWrap.appendChild(inImg);
@@ -1570,7 +1609,9 @@ function readPrizesFromEditor() {
 
     const num = Number(numEl?.value);
     const name = String(nameEl?.value || "").trim();
-    const img = String(imgEl?.dataset?.imgRef ?? imgEl?.value ?? "").trim();
+    const img = normalizeImageRef(
+      String(imgEl?.dataset?.imgRef ?? imgEl?.value ?? ""),
+    );
     const remaining = Number(remainEl?.value);
 
     if (!Number.isFinite(num) || !name) continue;
@@ -1588,7 +1629,7 @@ function readPrizesFromEditor() {
 function downloadExcel() {
   if (typeof XLSX === "undefined") {
     showAlert(
-      "엑셀 다운로드 라이브러리(XLSX)를 불러오지 못했습니다. 인터넷 연결 또는 CDN 차단 여부를 확인해 주세요."
+      "엑셀 다운로드 라이브러리(XLSX)를 불러오지 못했습니다. 인터넷 연결 또는 CDN 차단 여부를 확인해 주세요.",
     );
     return;
   }
@@ -1827,7 +1868,7 @@ function parseIdbRef(ref) {
 // blob->objectURL 캐시 (렌더링 성능/중복 호출 방지)
 const __imgUrlCache = new Map(); // key -> objectURL
 async function resolveImgSrc(imgRef, fallback) {
-  const raw = String(imgRef || "").trim();
+  const raw = normalizeImageRef(imgRef);
   if (!raw) return fallback;
 
   // IndexedDB 참조
@@ -1844,20 +1885,36 @@ async function resolveImgSrc(imgRef, fallback) {
   }
 
   // 기존 로직 (url/data/path/파일명)
-  if (raw.startsWith("data:") || raw.includes("://") || raw.includes("/"))
+  if (raw.startsWith("data:") || /^[a-z]+:\/\//i.test(raw)) return raw;
+
+  if (raw.startsWith("./") || raw.startsWith("../") || raw.startsWith("/")) {
     return raw;
+  }
+
+  if (/^(images|assets)\//i.test(raw)) {
+    return `./${raw.replace(/^\.\//, "")}`;
+  }
+
+  if (raw.includes("/")) {
+    return raw;
+  }
+
   return `./images/${raw}`;
 }
 
 function setImgSrcAsync(imgEl, imgRef, fallback) {
   if (!imgEl) return;
-  imgEl.src = fallback;
-  resolveImgSrc(imgRef, fallback)
+
+  const safeFallback =
+    normalizeImageRef(fallback) || "./images/placeholder.png";
+  imgEl.src = safeFallback;
+
+  resolveImgSrc(imgRef, safeFallback)
     .then((src) => {
-      imgEl.src = src;
+      imgEl.src = src || safeFallback;
     })
     .catch(() => {
-      imgEl.src = fallback;
+      imgEl.src = safeFallback;
     });
 }
 
