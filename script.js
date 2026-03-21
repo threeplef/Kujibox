@@ -65,6 +65,7 @@ const remainingCountEl =
   document.getElementById("remainingCount") ||
   document.getElementById("remainingCountModal");
 
+const btnRandomPickEl = document.getElementById("btnRandomPick");
 const logoTextEl = document.getElementById("logoText");
 const logoTextInputEl = document.getElementById("logoTextInput");
 
@@ -158,6 +159,36 @@ const confirmModalEl = document.getElementById("confirmModal");
 const confirmMessageEl = document.getElementById("confirmMessage");
 const btnCancelConfirmEl = document.getElementById("btnCancelConfirm");
 const btnOkConfirmEl = document.getElementById("btnOkConfirm");
+
+const remainingPrizeNumbersEl = document.getElementById(
+  "remainingPrizeNumbers",
+);
+
+const randomPickModalEl = document.getElementById("randomPickModal");
+const randomPickSlotEl = document.getElementById("randomPickSlot");
+const randomPickSubEl = document.getElementById("randomPickSub");
+
+const RANDOM_PICK_MESSAGES = [
+  "🎰 행운을 굴리는 중...",
+  "🔥 숨 참고 결과 확인...",
+  "🎯 결과는 이미 정해져 있다...",
+  "🎰 당첨의 신이 선택 중입니다...",
+  "🔥 제발 좋은 거 나와라...",
+  "🎉 당첨 기운 상승 중!",
+  "😂 꽝만 아니면 된다...",
+  "🎯 운명의 쿠지를 선택합니다...",
+  "😂 기도 타임 🙏",
+  "🔥 이번엔 진짜다...",
+  "🎉 이번엔 무조건 당첨!",
+];
+
+const RANDOM_PICK_END_MESSAGES = [
+  "🎉 선택 완료!",
+  "🔥 결과 공개!",
+  "🎯 운명 확정!",
+  "🎰 멈췄다!",
+  "👀 결과는 바로 이것!",
+];
 
 // ✅ 입장 코드(원하는 값으로 바꿔도 됨)
 const ACCESS_CODE = "1101";
@@ -282,20 +313,35 @@ function bindImagePicker({
 /***********************
  * INIT
  ***********************/
-loadConfigFromStorage();
-totalInputEl.value = String(state.total ?? DEFAULT_TOTAL);
-renderAll();
-// ✅ 앱 시작 시 입장 코드 체크
-if (!isAccessGranted()) {
-  openAccessModal();
+initApp();
+
+async function initApp() {
+  loadConfigFromStorage();
+
+  // ✅ 저장된 이미지(idb://...)를 먼저 미리 읽어 캐시에 올림
+  await preloadStoredImages();
+
+  // ✅ preload 끝난 뒤 히어로 이미지 반영
+  applyHeroToUI();
+
+  totalInputEl.value = String(state.total ?? DEFAULT_TOTAL);
+  renderAll();
+
+  // ✅ 앱 시작 시 입장 코드 체크
+  if (!isAccessGranted()) {
+    openAccessModal();
+  }
+
+  setupWinOverlayClose();
 }
-setupWinOverlayClose();
 
 /***********************
  * EVENTS
  ***********************/
 
 btnAccessEnterEl.addEventListener("click", tryEnterWithCode);
+
+btnRandomPickEl.addEventListener("click", pickRandomKuji);
 
 accessInputEl.addEventListener("keydown", (e) => {
   if (e.key === "Enter") tryEnterWithCode();
@@ -507,6 +553,11 @@ function openKujiOpenModal(index) {
   // ✅ 모달 아래에 "해당 쿠지 숫자"를 미리 깔아둠
   kujiUnderNumberEl.textContent = String(state.assignments[index]);
 
+  // ✅ 선택한 쿠지의 위치번호(row-col) 표시
+  const row = Math.floor(index / 10) + 1;
+  const col = (index % 10) + 1;
+  kujiOpenStageEl.setAttribute("data-pos", `${row}-${col}`);
+
   // ✅ 진행률 p 초기화 (0: 아직 안 깜)
   kujiOpenStageEl.style.setProperty("--p", "0");
 
@@ -539,6 +590,7 @@ function closeKujiOpenModal() {
 
   activeKujiIndex = null;
   pendingOpen = false;
+  kujiOpenStageEl.removeAttribute("data-pos");
 
   kujiOpenModalEl.classList.add("hidden");
   kujiOpenModalEl.setAttribute("aria-hidden", "true");
@@ -547,6 +599,116 @@ function closeKujiOpenModal() {
 function hideKujiOpenModalOnly() {
   kujiOpenModalEl.classList.add("hidden");
   kujiOpenModalEl.setAttribute("aria-hidden", "true");
+}
+
+async function pickRandomKuji() {
+  // 이름 입력 체크
+  if (!state.sessionName) {
+    showAlert("이름 입력 후 Enter(또는 시작)를 눌러 주세요.");
+    nameInputEl.focus();
+    return;
+  }
+
+  // 아직 안 열린 쿠지들만 추리기
+  const availableIndexes = [];
+  for (let i = 0; i < state.opened.length; i++) {
+    if (!state.opened[i]) {
+      availableIndexes.push(i);
+    }
+  }
+
+  if (availableIndexes.length === 0) {
+    showAlert("남은 쿠지가 없습니다!");
+    return;
+  }
+
+  // 이미 다른 쿠지 모달 열려 있으면 중복 방지
+  if (!kujiOpenModalEl.classList.contains("hidden")) return;
+  if (!randomPickModalEl.classList.contains("hidden")) return;
+
+  // 최종 선택
+  const finalIndex =
+    availableIndexes[Math.floor(Math.random() * availableIndexes.length)];
+
+  // 연출 시작
+  await playRandomPickMachine(availableIndexes, finalIndex);
+
+  // 연출 끝나면 선택된 쿠지 오픈 모달 표시
+  openKujiOpenModal(finalIndex);
+}
+
+function getRandomPickMessage() {
+  return RANDOM_PICK_MESSAGES[
+    Math.floor(Math.random() * RANDOM_PICK_MESSAGES.length)
+  ];
+}
+
+function indexToKujiPos(index) {
+  const row = Math.floor(index / 10) + 1;
+  const col = (index % 10) + 1;
+  return `${row}-${col}`;
+}
+
+function openRandomPickModal() {
+  randomPickModalEl.classList.remove("hidden");
+  randomPickModalEl.setAttribute("aria-hidden", "false");
+}
+
+function closeRandomPickModal() {
+  randomPickModalEl.classList.add("hidden");
+  randomPickModalEl.setAttribute("aria-hidden", "true");
+}
+
+function wait(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+async function playRandomPickMachine(availableIndexes, finalIndex) {
+  openRandomPickModal();
+
+  if (randomPickSubEl) {
+    randomPickSubEl.textContent = getRandomPickMessage();
+  }
+
+  // 빠르게 돌아가는 느낌
+  const fastDuration = 900;
+  const slowDuration = 700;
+  const start = performance.now();
+
+  while (performance.now() - start < fastDuration) {
+    const idx =
+      availableIndexes[Math.floor(Math.random() * availableIndexes.length)];
+    if (randomPickSlotEl) {
+      randomPickSlotEl.textContent = indexToKujiPos(idx);
+    }
+    await wait(55);
+  }
+
+  // 점점 느려지는 느낌
+  const slowSteps = [90, 120, 150, 190, 240, 300];
+  for (const delay of slowSteps) {
+    const idx =
+      availableIndexes[Math.floor(Math.random() * availableIndexes.length)];
+    if (randomPickSlotEl) {
+      randomPickSlotEl.textContent = indexToKujiPos(idx);
+    }
+    await wait(delay);
+  }
+
+  // 최종 당첨 위치 고정
+  if (randomPickSlotEl) {
+    randomPickSlotEl.textContent = indexToKujiPos(finalIndex);
+  }
+
+  if (randomPickSubEl) {
+    randomPickSubEl.textContent =
+      RANDOM_PICK_END_MESSAGES[
+        Math.floor(Math.random() * RANDOM_PICK_END_MESSAGES.length)
+      ];
+  }
+
+  await wait(700);
+  closeRandomPickModal();
 }
 
 function setupKujiSwipeOpen() {
@@ -973,10 +1135,44 @@ function renderStatus() {
   }
 }
 
+function getRemainingPrizeNumbers() {
+  const hitCount = {};
+
+  for (const h of state.history) {
+    const n = h.number;
+    hitCount[n] = (hitCount[n] || 0) + 1;
+  }
+
+  const remainingPrizeNums = [];
+
+  const keys = Object.keys(PRIZES)
+    .map(Number)
+    .sort((a, b) => a - b);
+
+  for (const num of keys) {
+    const item = PRIZES[num];
+    const hits = hitCount[num] || 0;
+    const limit = Number.isFinite(item?.remaining) ? Number(item.remaining) : 1;
+
+    if (hits < Math.max(1, limit)) {
+      remainingPrizeNums.push(num);
+    }
+  }
+
+  return remainingPrizeNums;
+}
+
 function renderCounters() {
   histCountEl.textContent = String(state.history.length);
+
   const remaining = state.opened.filter((v) => !v).length;
   remainingCountEl.textContent = String(remaining);
+
+  if (remainingPrizeNumbersEl) {
+    const nums = getRemainingPrizeNumbers();
+    remainingPrizeNumbersEl.textContent =
+      nums.length > 0 ? nums.join(", ") : "없음";
+  }
 }
 
 let activeKujiIndex = null; // 지금 팝업으로 띄운 쿠지 index
@@ -999,14 +1195,18 @@ function renderGrid() {
     btn.appendChild(pos);
 
     btn.className = "kuji" + (state.opened[i] ? " opened" : "");
+
     if (state.opened[i]) {
-      btn.setAttribute("data-reveal", String(state.assignments[i]));
-      const sub = document.createElement("div");
-      // sub.className = "sub";
-      // sub.textContent = `#${i + 1}`;
-      // btn.appendChild(sub);
-    } else {
-      btn.title = `쿠지 #${i + 1}`;
+      const revealedNumber = state.assignments[i];
+      btn.setAttribute("data-reveal", String(revealedNumber));
+
+      // ✅ 당첨 번호면만 색상 클래스 추가
+      if (
+        PRIZES &&
+        Object.prototype.hasOwnProperty.call(PRIZES, revealedNumber)
+      ) {
+        btn.classList.add("win");
+      }
     }
 
     btn.addEventListener("click", (e) => onClickKuji(i, e.currentTarget));
@@ -1180,36 +1380,52 @@ function renderHistoryModal() {
 function renderPrizeList() {
   prizeListEl.innerHTML = "";
 
-  // ✅ 번호별로 "나온 횟수" 집계 (쿠지 뜯어서 나온 번호)
+  // 번호별로 나온 횟수 집계
   const hitCount = {};
   for (const h of state.history) {
     const n = h.number;
     hitCount[n] = (hitCount[n] || 0) + 1;
   }
 
-  const keys = Object.keys(PRIZES)
+  // ✅ 남은 상품 먼저, 품절 상품 나중으로 정렬
+  const prizeEntries = Object.keys(PRIZES)
     .map(Number)
-    .sort((a, b) => a - b);
+    .map((num) => {
+      const item = PRIZES[num];
+      const hits = hitCount[num] || 0;
+      const limit = Number.isFinite(item.remaining)
+        ? Number(item.remaining)
+        : 1;
+      const soldOut = hits >= Math.max(1, limit);
 
-  for (const num of keys) {
-    const item = PRIZES[num];
+      return {
+        num,
+        item,
+        hits,
+        limit,
+        soldOut,
+      };
+    })
+    .sort((a, b) => {
+      // 1순위: 품절 아닌 상품 먼저
+      if (a.soldOut !== b.soldOut) {
+        return a.soldOut ? 1 : -1;
+      }
 
-    const hits = hitCount[num] || 0; // ✅ 한 번이라도 나오면 1 이상
-    const limit = Number.isFinite(item.remaining) ? Number(item.remaining) : 1;
-    const soldOut = hits >= Math.max(1, limit);
+      // 2순위: 같은 상태끼리는 번호순
+      return a.num - b.num;
+    });
 
+  for (const { num, item, hits, soldOut } of prizeEntries) {
     const card = document.createElement("div");
     card.className = "prize-card";
 
     if (soldOut) card.classList.add("soldout");
 
-    // (기존) 상품 이미지
     const thumb = document.createElement("div");
     thumb.className = "prize-thumb";
 
     const img = document.createElement("img");
-
-    // ✅ IndexedDB(idb://...) / URL / 경로 / 파일명 모두 대응
     setImgSrcAsync(img, item.img, `./images/${num}.png`);
     img.alt = item.name;
 
@@ -1220,7 +1436,6 @@ function renderPrizeList() {
 
     thumb.appendChild(img);
 
-    // ✅ 번호 배지 (숫자가 맨 위, 밑에 prize/winning 이미지)
     const numBadge = document.createElement("div");
     numBadge.className = "prize-num-badge";
 
@@ -1236,7 +1451,6 @@ function renderPrizeList() {
     numBadge.appendChild(bg);
     numBadge.appendChild(txt);
 
-    // 메타(상품명 + 번호배지)
     const meta = document.createElement("div");
     meta.className = "prize-meta";
 
@@ -1245,7 +1459,6 @@ function renderPrizeList() {
     nm.textContent = item.name;
 
     if (hits > 0) card.classList.add("is-winning");
-
     if (hits > 0) txt.classList.add("is-winning-text");
 
     meta.appendChild(nm);
@@ -1332,7 +1545,7 @@ function loadConfigFromStorage() {
 
   // 직관 UI 채우기
   renderPrizeEditorFromPrizes();
-  applyHeroToUI();
+  // applyHeroToUI();
   // renderPoolChips();
 }
 
@@ -1907,7 +2120,6 @@ function setImgSrcAsync(imgEl, imgRef, fallback) {
 
   const safeFallback =
     normalizeImageRef(fallback) || "./images/placeholder.png";
-  imgEl.src = safeFallback;
 
   resolveImgSrc(imgRef, safeFallback)
     .then((src) => {
@@ -1916,6 +2128,33 @@ function setImgSrcAsync(imgEl, imgRef, fallback) {
     .catch(() => {
       imgEl.src = safeFallback;
     });
+}
+
+async function preloadStoredImages() {
+  const refs = [];
+
+  // HERO 이미지
+  if (HERO?.img) {
+    refs.push(HERO.img);
+  }
+
+  // 상품 이미지들
+  if (PRIZES && typeof PRIZES === "object") {
+    for (const key of Object.keys(PRIZES)) {
+      const img = PRIZES[key]?.img;
+      if (img) refs.push(img);
+    }
+  }
+
+  // idb:// 로 저장된 이미지만 미리 resolve
+  const jobs = refs
+    .map((ref) => normalizeImageRef(ref))
+    .filter((ref) => typeof ref === "string" && ref.startsWith("idb://"))
+    .map((ref) =>
+      resolveImgSrc(ref, "./images/placeholder.png").catch(() => null),
+    );
+
+  await Promise.all(jobs);
 }
 
 // (선택) 페이지 떠날 때 objectURL 정리

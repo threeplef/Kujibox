@@ -38,37 +38,43 @@
         <section class="panel prize-panel">
           <div class="content">
             <!-- 상단 메인 피규어(설정에서 변경 가능) -->
-            <div class="left-hero">
-              <div class="left-hero-text">
-                <div class="logo-wrap">
+            <div style="position: relative">
+              <div class="top-actions1">
+                <button class="ghost2" id="btnOpenSettings">
                   <img
-                    src="./images/logo2.png"
-                    class="logo-img"
-                    style="width: 230px"
+                    src="./images/settings.png"
+                    alt="설정"
+                    loading="lazy"
+                    style="width: 25px"
                   />
-                  <!-- <div
+                </button>
+              </div>
+              <div class="left-hero">
+                <div class="left-hero-text">
+                  <div class="logo-wrap">
+                    <img
+                      src="./images/logo2.png"
+                      class="logo-img"
+                      style="width: 250px"
+                    />
+                    <!-- <div
                     class="logo-text black-han-sans-regular"
                     id="logoText"
                   ></div> -->
+                  </div>
                 </div>
 
-                <div class="top-actions1">
-                  <button class="ghost2" id="btnOpenSettings">
-                    상품 목록 설정
-                  </button>
-                </div>
-              </div>
-
-              <div class="left-hero-figure">
-                <img
-                  id="heroImg"
-                  src="./images/lo.png"
-                  alt="메인 피규어"
-                  loading="lazy"
-                />
-                <div class="hero-label">
-                  <span class="hero-chip" id="heroCode">L.O</span>
-                  <span class="hero-name" id="heroName">라스트원</span>
+                <div class="left-hero-figure">
+                  <img
+                    id="heroImg"
+                    src="./images/lo.png"
+                    alt="메인 피규어"
+                    loading="eager"
+                  />
+                  <div class="hero-label">
+                    <span class="hero-chip" id="heroCode">L.O</span>
+                    <span class="hero-name" id="heroName">라스트원</span>
+                  </div>
                 </div>
               </div>
             </div>
@@ -114,7 +120,7 @@
             >
               <label
                 style="
-                  font-size: 12px;
+                  font-size: 15px;
                   color: #444;
                   font-weight: 900;
                   white-space: nowrap;
@@ -134,10 +140,35 @@
           </div>
 
           <div class="grid-wrap">
-            <div class="muted" style="font-size: 12px; margin: 0 0 12px">
-              <span class="badge">규칙</span> 이름이 “기록 중” 상태일 때만
-              쿠지를 깔 수 있어요. (초기화하면 이름만 지워지고 기록은 유지)
+            <div
+              class="muted"
+              style="
+                position: relative;
+                font-size: 20px;
+                margin: 0 0 12px;
+                color: #000;
+                font-weight: 700;
+              "
+            >
+              <!-- <span class="badge">규칙</span> 이름이 “기록 중” 상태일 때만
+              쿠지를 깔 수 있어요. (초기화하면 이름만 지워지고 기록은 유지) -->
+              남은 장수:
+              <span
+                class="badge"
+                id="remainingCountModal"
+                style="font-size: 20px; font-weight: 700"
+                >0</span
+              >
+              <span style="margin-left: 12px">남은 당첨 번호:</span>
+              <span
+                class="badge"
+                id="remainingPrizeNumbers"
+                style="font-size: 20px; font-weight: 700"
+                >없음</span
+              >
+              <button class="ghost" id="btnRandomPick">🎲 랜덤픽</button>
             </div>
+
             <div class="grid" id="grid"></div>
           </div>
         </section>
@@ -168,6 +199,25 @@
         </section> -->
       </div>
 
+      <!-- RANDOM PICK MODAL -->
+      <div class="modal hidden" id="randomPickModal" aria-hidden="true">
+        <div
+          class="modal-card random-pick-card"
+          role="dialog"
+          aria-modal="true"
+        >
+          <div class="random-pick-body">
+            <div class="random-pick-title">[ 랜 덤 픽 ]</div>
+            <div class="random-pick-machine">
+              <div class="random-pick-slot" id="randomPickSlot">1-1</div>
+            </div>
+            <div class="random-pick-sub" id="randomPickSub">
+              쿠지를 선택 중입니다
+            </div>
+          </div>
+        </div>
+      </div>
+
       <!-- HISTORY MODAL -->
       <div class="modal hidden" id="historyModal" aria-hidden="true">
         <div
@@ -186,10 +236,10 @@
               style="border-bottom: none; padding: 0; margin-bottom: 10px"
             >
               <div class="muted" style="font-size: 12px">
-                오픈:
+                오픈한 장수:
                 <span class="badge" id="histCountModal">0</span>
-                &nbsp;&nbsp;|&nbsp;&nbsp; 남은 쿠지:
-                <span class="badge" id="remainingCountModal">0</span>
+                <!-- &nbsp;&nbsp;|&nbsp;&nbsp; 남은 쿠지:
+                <span class="badge" id="remainingCountModal">0</span> -->
               </div>
               <button class="ghost1" id="btnDownloadModal">
                 기록 다운로드
@@ -199,8 +249,8 @@
             <table>
               <thead>
                 <tr>
-                  <th style="width: 110px">이름</th>
-                  <th>번호</th>
+                  <th style="width: 120px">닉네임</th>
+                  <th>뽑은 번호</th>
                 </tr>
               </thead>
               <tbody id="historyBodyModal"></tbody>
