@@ -402,9 +402,9 @@ btnCloseSettingsEl.addEventListener("click", closeSettings);
 btnSaveSettingsEl.addEventListener("click", saveSettingsAndApply);
 
 // 바깥 클릭 시 닫기(원하면 제거 가능)
-settingsModalEl.addEventListener("click", (e) => {
-  if (e.target === settingsModalEl) closeSettings();
-});
+// settingsModalEl.addEventListener("click", (e) => {
+//   if (e.target === settingsModalEl) closeSettings();
+// });
 
 // 초기화: "이미 깐 쿠지 유지", "기록(세션) 멈춤", "이름만 지움"
 btnResetSessionEl.addEventListener("click", async () => {
