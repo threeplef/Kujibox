@@ -10,9 +10,8 @@ const DEFAULT_TOTAL = 90;
 // localStorage keys
 const LS_KEY_PRIZES = "kuji_prizes";
 const LS_KEY_HERO = "kuji_hero";
-// const LS_KEY_NUMBERS = "kuji_numbers";
-const LS_KEY_LOGO_TEXT = "kuji_logo_text";
-const DEFAULT_LOGO_TEXT = "1";
+const LS_KEY_LOGO = "kuji_logo";
+const DEFAULT_LOGO = "./images/logo2.png";
 
 // 기본 상품 목록(기존 PRIZES 내용을 그대로 여기로 옮기세요)
 const DEFAULT_PRIZES = {
@@ -32,8 +31,9 @@ const DEFAULT_HERO = {
   img: "",
 };
 
-let PRIZES = DEFAULT_PRIZES; // 런타임에 설정값으로 덮어씀
+let PRIZES = DEFAULT_PRIZES;
 let HERO = DEFAULT_HERO;
+let LOGO = DEFAULT_LOGO;
 
 /***********************
  * STATE (localStorage 저장)
@@ -49,6 +49,7 @@ const LS_KEY = "kuji_app_state_v1";
  *   sessionName: string|null // 현재 기록중인 이름(Enter/시작으로 설정)
  * }
  */
+
 let state = loadState();
 
 /***********************
@@ -66,8 +67,11 @@ const remainingCountEl =
   document.getElementById("remainingCountModal");
 
 const btnRandomPickEl = document.getElementById("btnRandomPick");
-const logoTextEl = document.getElementById("logoText");
-const logoTextInputEl = document.getElementById("logoTextInput");
+
+const logoImgEl = document.getElementById("logoImg");
+const logoImgInputEl = document.getElementById("logoImgInput");
+const btnLogoPickFileEl = document.getElementById("btnLogoPickFile");
+const logoFileInputEl = document.getElementById("logoFileInput");
 
 const prizeListEl = document.getElementById("prizeList");
 
@@ -105,6 +109,7 @@ const btnToggleHistoryEl = document.getElementById("btnToggleHistory");
 const historyModalEl = document.getElementById("historyModal");
 const btnCloseHistoryModalEl = document.getElementById("btnCloseHistoryModal");
 const historyBodyModalEl = document.getElementById("historyBodyModal");
+const historySummaryModalEl = document.getElementById("historySummaryModal");
 const histCountModalEl = document.getElementById("histCountModal");
 const remainingCountModalEl = document.getElementById("remainingCountModal");
 const btnDownloadModalEl = document.getElementById("btnDownloadModal");
@@ -321,6 +326,7 @@ async function initApp() {
   // ✅ 저장된 이미지(idb://...)를 먼저 미리 읽어 캐시에 올림
   await preloadStoredImages();
 
+  applyLogoToUI();
   // ✅ preload 끝난 뒤 히어로 이미지 반영
   applyHeroToUI();
 
@@ -432,6 +438,15 @@ bindImagePicker({
   },
   successMessage: "라스트원 이미지 업로드 완료!",
   failureMessage: "라스트원 이미지 업로드에 실패했어요.",
+});
+
+bindImagePicker({
+  textInput: logoImgInputEl,
+  fileInput: logoFileInputEl,
+  pickButton: btnLogoPickFileEl,
+  onImageChange: null, // 저장 버튼 눌러야 반영
+  successMessage: "로고 이미지 업로드 완료!",
+  failureMessage: "로고 이미지 업로드에 실패했어요.",
 });
 
 // 엑셀 다운로드
@@ -1290,6 +1305,16 @@ function formatHistoryName(name, totalCount) {
   return `${name} (${count})`;
 }
 
+function buildHistorySummaryText(grouped, order) {
+  return order
+    .map((name) => {
+      const entry = grouped.get(name);
+      const count = Number(entry?.totalCount) || 0;
+      return `${name}*${count}`;
+    })
+    .join(", ");
+}
+
 function appendHistoryNumbers(tdNum, segments) {
   tdNum.innerHTML = "";
 
@@ -1314,10 +1339,23 @@ function appendHistoryNumbers(tdNum, segments) {
 }
 
 function renderHistory() {
-  if (!historyBodyEl) return; // ✅ 기록 UI가 없으면 렌더 스킵
+  if (!historyBodyEl) return;
   historyBodyEl.innerHTML = "";
 
   const { grouped, order } = buildHistoryGroupsByName();
+
+  // ✅ 맨 위 요약 행 추가
+  if (order.length > 0) {
+    const summaryTr = document.createElement("tr");
+
+    const summaryTd = document.createElement("td");
+    summaryTd.colSpan = 2;
+    summaryTd.className = "history-summary-cell";
+    summaryTd.textContent = buildHistorySummaryText(grouped, order);
+
+    summaryTr.appendChild(summaryTd);
+    historyBodyEl.appendChild(summaryTr);
+  }
 
   for (const name of order) {
     const entry = grouped.get(name);
@@ -1358,6 +1396,19 @@ function renderHistoryModal() {
   historyBodyModalEl.innerHTML = "";
 
   const { grouped, order } = buildHistoryGroupsByName();
+
+  // ✅ 요약 문구
+  if (historySummaryModalEl) {
+    const summaryText = buildHistorySummaryText(grouped, order);
+
+    if (summaryText) {
+      historySummaryModalEl.textContent = summaryText;
+      historySummaryModalEl.classList.remove("hidden");
+    } else {
+      historySummaryModalEl.textContent = "";
+      historySummaryModalEl.classList.add("hidden");
+    }
+  }
 
   for (const name of order) {
     const entry = grouped.get(name);
@@ -1492,12 +1543,27 @@ function applyHeroToUI() {
   setImgSrcAsync(heroImg, HERO?.img, "./images/lo.png");
 }
 
-function loadConfigFromStorage() {
-  const savedLogoText = localStorage.getItem(LS_KEY_LOGO_TEXT);
-  const logoText = savedLogoText ?? DEFAULT_LOGO_TEXT;
+function applyLogoToUI() {
+  if (!logoImgEl) return;
+  setImgSrcAsync(logoImgEl, LOGO, DEFAULT_LOGO);
+}
 
-  if (logoTextEl) logoTextEl.textContent = logoText;
-  if (logoTextInputEl) logoTextInputEl.value = logoText;
+function loadConfigFromStorage() {
+  const savedLogo = localStorage.getItem(LS_KEY_LOGO);
+  LOGO = savedLogo || DEFAULT_LOGO;
+
+  if (logoImgInputEl) {
+    const raw = String(LOGO ?? "");
+    const p = parseIdbRef(raw);
+
+    if (p?.key) {
+      logoImgInputEl.dataset.imgRef = raw;
+      logoImgInputEl.value = p.name || "(업로드됨)";
+    } else {
+      delete logoImgInputEl.dataset.imgRef;
+      logoImgInputEl.value = raw;
+    }
+  }
 
   // PRIZES
   const rawPrizes = localStorage.getItem(LS_KEY_PRIZES);
@@ -1545,8 +1611,7 @@ function loadConfigFromStorage() {
 
   // 직관 UI 채우기
   renderPrizeEditorFromPrizes();
-  // applyHeroToUI();
-  // renderPoolChips();
+  applyLogoToUI();
 }
 
 function openSettings() {
@@ -1561,10 +1626,17 @@ function closeSettings() {
 }
 
 function saveSettingsAndApply() {
-  if (logoTextInputEl) {
-    const t = logoTextInputEl.value.trim();
-    localStorage.setItem(LS_KEY_LOGO_TEXT, t);
-    if (logoTextEl) logoTextEl.textContent = t;
+  const nextLogo = normalizeImageRef(
+    String(logoImgInputEl?.dataset?.imgRef ?? logoImgInputEl?.value ?? ""),
+  );
+
+  try {
+    localStorage.setItem(LS_KEY_LOGO, nextLogo || DEFAULT_LOGO);
+  } catch {
+    showAlert(
+      "로고 저장이 실패했어요. 이미지 용량이 너무 크거나 브라우저 저장공간이 부족할 수 있어요.",
+    );
+    return;
   }
 
   // prizes: 에디터에서 읽기
@@ -1606,7 +1678,9 @@ function saveSettingsAndApply() {
 
   PRIZES = nextPrizes;
   HERO = nextHero;
+  LOGO = nextLogo || DEFAULT_LOGO;
 
+  applyLogoToUI();
   applyHeroToUI();
   renderAll();
   closeSettings();

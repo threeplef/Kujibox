@@ -149,7 +149,7 @@ main {
 
 .layout {
   display: grid;
-  grid-template-columns: 600px 1fr;
+  grid-template-columns: 800px 1fr;
   gap: 14px;
   align-items: stretch;
   min-height: calc(100vh - 64px - 32px);
@@ -206,8 +206,23 @@ tbody td {
   color: #222;
 }
 
+.grid-wrap .muted {
+  position: sticky;
+  top: 0;
+  left: 0;
+  z-index: 10;
+  margin: 0;
+  background: #fff;
+  padding: 14px 14px 12px;
+  font-size: 20px;
+  color: #000;
+  font-weight: 700;
+  border-bottom: 1px solid var(--border);
+}
+
 .muted {
   color: var(--muted);
+  padding: 14px 140px 12px 14px;
 }
 
 .badge {
@@ -246,6 +261,20 @@ tbody td {
 .history-panel td:nth-child(2) {
   width: 210px; /* 원하는 “지정 길이”로 조절 가능 */
   max-width: 220px;
+}
+
+.history-summary-box {
+  margin: 0 0 12px;
+  padding: 10px 12px;
+  border: 1px solid #ffd4e4;
+  border-radius: 12px;
+  background: #fff7fb;
+  color: #c91f67;
+  font-size: 14px;
+  font-weight: 900;
+  line-height: 1.5;
+  white-space: normal;
+  word-break: break-word;
 }
 
 /* 기록 패널: 당첨 번호 강조 */
@@ -302,6 +331,8 @@ input[type="number"]:focus {
 #btnRandomPick {
   position: absolute;
   right: 10px;
+  top: 50%;
+  transform: translateY(-50%);
   background: #ff498f;
   color: #fff;
   border: none;
@@ -408,23 +439,20 @@ input[type="number"]:focus {
 }
 
 .grid-wrap {
+  position: relative;
   background: #fff;
   border: 1px solid var(--border);
   border-radius: var(--radius);
-  padding: 14px;
+  padding: 0;
   box-shadow: var(--shadow);
-
-  /* ✅ 핵심: 스크롤이 “생길 수 있게” 높이 계산 허용 */
   flex: 1;
   min-height: 0;
-
-  /* ✅ 스크롤 */
   overflow-y: auto;
   overscroll-behavior: contain;
 }
 
 .grid {
-  padding-top: 10px;
+  padding: 10px;
   display: grid;
   grid-template-columns: repeat(10, minmax(150px, 1fr));
   gap: 14px;
@@ -596,6 +624,17 @@ input[type="number"]:focus {
 /* ===== Config UI (settings modal) ===== */
 .hidden {
   display: none !important;
+}
+
+.logo-img {
+  display: block;
+  margin: 0 auto 10px;
+  object-fit: contain;
+}
+
+.logo-upload-box {
+  text-align: center;
+  margin-bottom: 10px;
 }
 
 .cfg-grid {
@@ -1298,7 +1337,7 @@ input[type="number"]:focus {
 /* ---------- GRID ---------- */
 .prize-grid {
   display: grid;
-  grid-template-columns: repeat(3, 1fr); /* 🔥 사진처럼 4열 */
+  grid-template-columns: repeat(4, 1fr); /* 🔥 사진처럼 4열 */
   gap: 14px;
 }
 

@@ -53,6 +53,7 @@
                 <div class="left-hero-text">
                   <div class="logo-wrap">
                     <img
+                      id="logoImg"
                       src="./images/logo2.png"
                       class="logo-img"
                       style="width: 250px"
@@ -140,16 +141,7 @@
           </div>
 
           <div class="grid-wrap">
-            <div
-              class="muted"
-              style="
-                position: relative;
-                font-size: 20px;
-                margin: 0 0 12px;
-                color: #000;
-                font-weight: 700;
-              "
-            >
+            <div class="muted">
               <!-- <span class="badge">규칙</span> 이름이 “기록 중” 상태일 때만
               쿠지를 깔 수 있어요. (초기화하면 이름만 지워지고 기록은 유지) -->
               남은 장수:
@@ -238,13 +230,16 @@
               <div class="muted" style="font-size: 12px">
                 오픈한 장수:
                 <span class="badge" id="histCountModal">0</span>
-                <!-- &nbsp;&nbsp;|&nbsp;&nbsp; 남은 쿠지:
-                <span class="badge" id="remainingCountModal">0</span> -->
               </div>
               <button class="ghost1" id="btnDownloadModal">
                 기록 다운로드
               </button>
             </div>
+
+            <div
+              id="historySummaryModal"
+              class="history-summary-box hidden"
+            ></div>
 
             <table>
               <thead>
@@ -310,11 +305,27 @@
 
               <!-- 상품 목록 -->
               <div class="cfg-row">
-                <input
-                  type="text"
-                  id="logoTextInput"
-                  placeholder="해당 자체쿠지가 몇 탄인지 작성해주세요."
-                />
+                <div class="cfg-title">로고 설정</div>
+
+                <div class="cfg-row2" style="grid-template-columns: 20fr 2fr">
+                  <input
+                    type="text"
+                    id="logoImgInput"
+                    placeholder="이미지 경로 또는 파일 선택"
+                    style="width: 100%"
+                  />
+
+                  <button class="ghost" type="button" id="btnLogoPickFile">
+                    파일
+                  </button>
+
+                  <input
+                    type="file"
+                    id="logoFileInput"
+                    accept="image/*"
+                    style="display: none"
+                  />
+                </div>
               </div>
               <div class="cfg-block">
                 <div class="cfg-title">상품 목록 설정</div>
