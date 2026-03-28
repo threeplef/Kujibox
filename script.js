@@ -35,6 +35,14 @@ let PRIZES = DEFAULT_PRIZES;
 let HERO = DEFAULT_HERO;
 let LOGO = DEFAULT_LOGO;
 
+let currentPickCandidates = [];
+let openedPickCandidates = new Set();
+let isFromPickMode = false;
+let currentOpeningIndex = null;
+let isShuffleRunning = false;
+let shuffledDeckIndexes = [];
+let isSlotMachineRunning = false;
+
 /***********************
  * STATE (localStorage 저장)
  ***********************/
@@ -71,6 +79,21 @@ const btnMoveToBackEl = document.getElementById("btnMoveToBack");
 const queueListEl = document.getElementById("queueList");
 
 const btnRandomPickEl = document.getElementById("btnRandomPick");
+const btnCloseRandomPickEl = document.getElementById("btnCloseRandomPick");
+const btnStartShuffleEl = document.getElementById("btnStartShuffle");
+const shuffleCountInputEl = document.getElementById("shuffleCountInput");
+const pickCardsEl = document.getElementById("pickCards");
+const deckStackEl = document.getElementById("deckStack");
+
+const btnSlotRandomPickEl = document.getElementById("btnSlotRandomPick");
+const slotRandomPickModalEl = document.getElementById("slotRandomPickModal");
+const btnCloseSlotRandomPickEl = document.getElementById(
+  "btnCloseSlotRandomPick",
+);
+const btnStartSlotMachineEl = document.getElementById("btnStartSlotMachine");
+const slotReelAEl = document.getElementById("slotReelA");
+const slotReelBEl = document.getElementById("slotReelB");
+const slotRandomPickSubEl = document.getElementById("slotRandomPickSub");
 
 const logoImgEl = document.getElementById("logoImg");
 const logoImgInputEl = document.getElementById("logoImgInput");
@@ -348,6 +371,16 @@ btnFinishTurnEl?.addEventListener("click", finishCurrentTurn);
 btnMoveToBackEl?.addEventListener("click", moveCurrentToBack);
 
 btnRandomPickEl.addEventListener("click", pickRandomKuji);
+btnCloseRandomPickEl?.addEventListener("click", closeRandomPickModal);
+btnStartShuffleEl?.addEventListener("click", startShuffleAndShowCards);
+
+btnSlotRandomPickEl?.addEventListener("click", openSlotRandomPickModal);
+btnCloseSlotRandomPickEl?.addEventListener("click", closeSlotRandomPickModal);
+btnStartSlotMachineEl?.addEventListener("click", startSlotMachinePick);
+
+slotRandomPickModalEl?.addEventListener("click", (e) => {
+  e.stopPropagation();
+});
 
 accessInputEl.addEventListener("keydown", (e) => {
   if (e.key === "Enter") tryEnterWithCode();
@@ -732,11 +765,13 @@ function openKujiOpenModal(index) {
 }
 
 function closeKujiOpenModal() {
+  let justOpenedIndex = null;
+
   if (pendingOpen && activeKujiIndex !== null) {
-    commitOpenKuji(activeKujiIndex); // ✅ 여기서만 바닥 오픈 반영
+    justOpenedIndex = activeKujiIndex;
+    commitOpenKuji(activeKujiIndex);
   }
 
-  // ✅ 닫을 때 폭죽/당첨 UI 정리
   stopConfetti();
   hideWinResult();
 
@@ -746,6 +781,37 @@ function closeKujiOpenModal() {
 
   kujiOpenModalEl.classList.add("hidden");
   kujiOpenModalEl.setAttribute("aria-hidden", "true");
+
+  if (
+    isFromPickMode &&
+    justOpenedIndex !== null &&
+    currentPickCandidates.includes(justOpenedIndex)
+  ) {
+    afterOpenFromPick(justOpenedIndex);
+  }
+}
+
+function afterOpenFromPick(kujiIndex) {
+  openedPickCandidates.add(kujiIndex);
+
+  renderPickCards(currentPickCandidates);
+
+  const remainCount = currentPickCandidates.length - openedPickCandidates.size;
+
+  if (openedPickCandidates.size === currentPickCandidates.length) {
+    randomPickSubEl.textContent = "세 장을 모두 확인했습니다!";
+
+    setTimeout(() => {
+      closeRandomPickModal();
+      currentPickCandidates = [];
+      openedPickCandidates = new Set();
+      isFromPickMode = false;
+      currentOpeningIndex = null;
+    }, 800);
+  } else {
+    randomPickSubEl.textContent = `남은 카드 ${remainCount}장`;
+    openRandomPickModal();
+  }
 }
 
 function hideKujiOpenModalOnly() {
@@ -754,38 +820,232 @@ function hideKujiOpenModalOnly() {
 }
 
 async function pickRandomKuji() {
-  // 이름 입력 체크
   if (!state.sessionName) {
     showAlert("이름 입력 후 Enter(또는 시작)를 눌러 주세요.");
     nameInputEl.focus();
     return;
   }
 
-  // 아직 안 열린 쿠지들만 추리기
-  const availableIndexes = [];
-  for (let i = 0; i < state.opened.length; i++) {
-    if (!state.opened[i]) {
-      availableIndexes.push(i);
-    }
-  }
-
+  const availableIndexes = getAvailableKujiIndexes();
   if (availableIndexes.length === 0) {
     showAlert("남은 쿠지가 없습니다!");
     return;
   }
 
-  // 이미 다른 쿠지 모달 열려 있으면 중복 방지
-  if (!kujiOpenModalEl.classList.contains("hidden")) return;
-  if (!randomPickModalEl.classList.contains("hidden")) return;
+  shuffledDeckIndexes = [...availableIndexes];
+  currentPickCandidates = [];
+  renderDeckStack(shuffledDeckIndexes.length);
+  renderPickCards([]);
+  randomPickSubEl.textContent = "섞을 횟수를 입력하고 시작하세요.";
 
-  // 최종 선택
+  openRandomPickModal();
+}
+
+function getAvailableKujiIndexes() {
+  const available = [];
+  for (let i = 0; i < state.opened.length; i++) {
+    if (!state.opened[i]) available.push(i);
+  }
+  return available;
+}
+
+async function startShuffleAndShowCards() {
+  if (isShuffleRunning) return;
+
+  const availableIndexes = getAvailableKujiIndexes();
+  if (availableIndexes.length === 0) {
+    showAlert("남은 쿠지가 없습니다!");
+    return;
+  }
+
+  let shuffleCount = parseInt(shuffleCountInputEl.value, 10);
+  if (!Number.isFinite(shuffleCount) || shuffleCount <= 0) {
+    showAlert("섞을 횟수를 1 이상으로 입력해 주세요.");
+    shuffleCountInputEl.focus();
+    return;
+  }
+
+  isShuffleRunning = true;
+  pickCardsEl.innerHTML = "";
+  randomPickSubEl.textContent = "카드를 섞는 중...";
+
+  shuffledDeckIndexes = [...availableIndexes];
+
+  for (let i = 0; i < shuffleCount; i++) {
+    shuffle(shuffledDeckIndexes);
+    renderDeckStack(shuffledDeckIndexes.length, true);
+    randomPickSubEl.textContent = `${i + 1} / ${shuffleCount}번 섞는 중...`;
+    await wait(350);
+  }
+
+  openedPickCandidates = new Set();
+  isFromPickMode = false;
+  currentOpeningIndex = null;
+
+  currentPickCandidates = shuffledDeckIndexes.slice(
+    0,
+    Math.min(3, shuffledDeckIndexes.length),
+  );
+  renderPickCards(currentPickCandidates);
+
+  if (currentPickCandidates.length > 0) {
+    randomPickSubEl.textContent = "3장 중 1장을 선택하세요.";
+  } else {
+    randomPickSubEl.textContent = "선택 가능한 카드가 없습니다.";
+  }
+
+  isShuffleRunning = false;
+}
+
+function renderDeckStack(count, shaking = false) {
+  if (!deckStackEl) return;
+
+  deckStackEl.innerHTML = "";
+
+  const layerCount = Math.min(6, Math.max(1, count));
+  for (let i = 0; i < layerCount; i++) {
+    const card = document.createElement("div");
+    card.className = "deck-back-card" + (shaking ? " shaking" : "");
+    card.style.transform = `translate(${i * 3}px, ${i * 3}px) rotate(${(i - 2) * 2}deg)`;
+    deckStackEl.appendChild(card);
+  }
+}
+
+function renderPickCards(candidates) {
+  if (!pickCardsEl) return;
+  pickCardsEl.innerHTML = "";
+
+  candidates.forEach((kujiIndex, visualIdx) => {
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.className = "pick-card";
+
+    const front = document.createElement("div");
+    front.className = "pick-card-front";
+    front.textContent = `CARD ${visualIdx + 1}`;
+
+    const back = document.createElement("div");
+    back.className = "pick-card-back";
+    back.textContent = indexToKujiPos(kujiIndex);
+
+    btn.appendChild(front);
+    btn.appendChild(back);
+
+    const isOpened = openedPickCandidates.has(kujiIndex);
+
+    // 이미 깐 카드는 뒤집힌 상태 유지
+    if (isOpened) {
+      btn.classList.add("selected", "opened");
+      btn.disabled = true;
+    }
+
+    btn.addEventListener("click", () => {
+      if (isShuffleRunning) return;
+      if (openedPickCandidates.has(kujiIndex)) return;
+
+      btn.classList.add("selected");
+
+      isFromPickMode = true;
+      currentOpeningIndex = kujiIndex;
+
+      setTimeout(() => {
+        openKujiOpenModal(kujiIndex);
+      }, 1200);
+    });
+
+    pickCardsEl.appendChild(btn);
+  });
+}
+
+function openSlotRandomPickModal() {
+  if (!state.sessionName) {
+    showAlert("이름 입력 후 Enter(또는 시작)를 눌러 주세요.");
+    nameInputEl.focus();
+    return;
+  }
+
+  const availableIndexes = getAvailableKujiIndexes();
+  if (availableIndexes.length === 0) {
+    showAlert("남은 쿠지가 없습니다!");
+    return;
+  }
+
+  if (slotReelAEl) slotReelAEl.textContent = "?";
+  if (slotReelBEl) slotReelBEl.textContent = "?";
+  if (slotRandomPickSubEl) {
+    slotRandomPickSubEl.textContent = "START를 누르면 번호가 돌아갑니다.";
+  }
+
+  slotRandomPickModalEl.classList.remove("hidden");
+  slotRandomPickModalEl.setAttribute("aria-hidden", "false");
+}
+
+function closeSlotRandomPickModal() {
+  if (isSlotMachineRunning) return;
+
+  slotRandomPickModalEl.classList.add("hidden");
+  slotRandomPickModalEl.setAttribute("aria-hidden", "true");
+
+  slotReelAEl?.classList.remove("spinning");
+  slotReelBEl?.classList.remove("spinning");
+}
+
+async function startSlotMachinePick() {
+  if (isSlotMachineRunning) return;
+
+  const availableIndexes = getAvailableKujiIndexes();
+  if (availableIndexes.length === 0) {
+    showAlert("남은 쿠지가 없습니다!");
+    return;
+  }
+
+  isSlotMachineRunning = true;
+
   const finalIndex =
     availableIndexes[Math.floor(Math.random() * availableIndexes.length)];
+  const finalPos = indexToKujiPos(finalIndex);
+  const [finalRow, finalCol] = finalPos.split("-");
 
-  // 연출 시작
-  await playRandomPickMachine(availableIndexes, finalIndex);
+  slotReelAEl?.classList.add("spinning");
+  slotReelBEl?.classList.add("spinning");
 
-  // 연출 끝나면 선택된 쿠지 오픈 모달 표시
+  if (slotRandomPickSubEl) {
+    slotRandomPickSubEl.textContent = getRandomPickMessage();
+  }
+
+  // 두 자리 동시에 회전
+  const totalDuration = 1800;
+  const start = performance.now();
+
+  while (performance.now() - start < totalDuration) {
+    const idx =
+      availableIndexes[Math.floor(Math.random() * availableIndexes.length)];
+    const [row, col] = indexToKujiPos(idx).split("-");
+
+    if (slotReelAEl) slotReelAEl.textContent = row;
+    if (slotReelBEl) slotReelBEl.textContent = col;
+
+    await wait(70);
+  }
+
+  // 최종 번호 고정
+  if (slotReelAEl) slotReelAEl.textContent = finalRow;
+  if (slotReelBEl) slotReelBEl.textContent = finalCol;
+
+  slotReelAEl?.classList.remove("spinning");
+  slotReelBEl?.classList.remove("spinning");
+
+  if (slotRandomPickSubEl) {
+    slotRandomPickSubEl.textContent =
+      RANDOM_PICK_END_MESSAGES[
+        Math.floor(Math.random() * RANDOM_PICK_END_MESSAGES.length)
+      ];
+  }
+
+  await wait(1000);
+
+  isSlotMachineRunning = false;
+  closeSlotRandomPickModal();
   openKujiOpenModal(finalIndex);
 }
 
@@ -809,6 +1069,13 @@ function openRandomPickModal() {
 function closeRandomPickModal() {
   randomPickModalEl.classList.add("hidden");
   randomPickModalEl.setAttribute("aria-hidden", "true");
+
+  currentPickCandidates = [];
+  openedPickCandidates = new Set();
+  isFromPickMode = false;
+  currentOpeningIndex = null;
+
+  if (pickCardsEl) pickCardsEl.innerHTML = "";
 }
 
 function wait(ms) {
@@ -990,19 +1257,28 @@ function setupWinOverlayClose() {
   const close = () => {
     hideWinResult();
     stopConfetti();
+
     if (pendingWinCommitIndex !== null) {
-      commitOpenKuji(pendingWinCommitIndex);
+      const justOpenedIndex = pendingWinCommitIndex;
+
+      commitOpenKuji(justOpenedIndex);
       pendingWinCommitIndex = null;
 
-      // 다음 오픈을 위해 정리
       activeKujiIndex = null;
       pendingOpen = false;
+
+      if (isFromPickMode) {
+        afterOpenFromPick(justOpenedIndex);
+      }
     }
   };
-  if (btnCloseWinOverlayEl)
+
+  if (btnCloseWinOverlayEl) {
     btnCloseWinOverlayEl.addEventListener("click", close);
-  if (winOverlayBackdropEl)
+  }
+  if (winOverlayBackdropEl) {
     winOverlayBackdropEl.addEventListener("click", close);
+  }
 }
 
 function showWinResult() {

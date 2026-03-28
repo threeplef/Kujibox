@@ -168,7 +168,10 @@
                 style="font-size: 20px; font-weight: 700"
                 >없음</span
               >
-              <button class="ghost" id="btnRandomPick">🎲 랜덤픽</button>
+              <div class="random-pick-buttons">
+                <button class="ghost" id="btnRandomPick">🃏 카드 랜덤픽</button>
+                <button class="ghost" id="btnSlotRandomPick">🎰 슬롯픽</button>
+              </div>
             </div>
 
             <div class="grid" id="grid"></div>
@@ -204,17 +207,118 @@
       <!-- RANDOM PICK MODAL -->
       <div class="modal hidden" id="randomPickModal" aria-hidden="true">
         <div
-          class="modal-card random-pick-card"
+          class="modal-card random-pick-card deck-pick-card"
           role="dialog"
           aria-modal="true"
         >
-          <div class="random-pick-body">
-            <div class="random-pick-title">[ 랜 덤 픽 ]</div>
-            <div class="random-pick-machine">
-              <div class="random-pick-slot" id="randomPickSlot">1-1</div>
+          <div class="modal-head">
+            <h3>카드 셔플 랜덤픽</h3>
+            <button class="ghost1" id="btnCloseRandomPick">닫기</button>
+          </div>
+
+          <div class="modal-body deck-pick-body">
+            <div class="deck-control-row">
+              <label for="shuffleCountInput">섞을 횟수</label>
+              <input
+                id="shuffleCountInput"
+                type="number"
+                min="1"
+                step="1"
+                value="5"
+              />
+              <button class="primary" id="btnStartShuffle">셔플 시작</button>
             </div>
-            <div class="random-pick-sub" id="randomPickSub">
-              쿠지를 선택 중입니다
+
+            <div class="deck-stack-wrap">
+              <div
+                class="deck-stack"
+                id="deckStack"
+                aria-label="카드 더미"
+              ></div>
+              <div class="deck-status" id="randomPickSub">
+                셔플 횟수를 입력하고 시작하세요.
+              </div>
+            </div>
+
+            <div class="pick-cards" id="pickCards">
+              <!-- 셔플 후 3장 생성 -->
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- SLOT RANDOM PICK MODAL -->
+      <div class="modal hidden" id="slotRandomPickModal" aria-hidden="true">
+        <div
+          class="modal-card slot-machine-modal-card"
+          role="dialog"
+          aria-modal="true"
+        >
+          <div class="slot-machine-shell">
+            <div class="slot-machine-sign">
+              <span class="sign-bulb"></span>
+              <span class="sign-bulb orange"></span>
+              <span class="sign-bulb"></span>
+              <span class="sign-title">SLOT MACHINE</span>
+              <span class="sign-bulb"></span>
+              <span class="sign-bulb orange"></span>
+              <span class="sign-bulb"></span>
+            </div>
+
+            <div class="slot-machine-cabinet">
+              <button
+                class="slot-close-btn"
+                id="btnCloseSlotRandomPick"
+                type="button"
+              >
+                닫기
+              </button>
+
+              <div class="slot-screen-frame">
+                <div class="slot-bulbs">
+                  <span></span><span></span><span></span><span></span
+                  ><span></span> <span></span><span></span><span></span
+                  ><span></span><span></span>
+                </div>
+
+                <div class="slot-screen">
+                  <div class="slot-window">
+                    <div class="slot-reel" id="slotReelA">0</div>
+                  </div>
+
+                  <div class="slot-dash">-</div>
+
+                  <div class="slot-window">
+                    <div class="slot-reel" id="slotReelB">0</div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="slot-machine-sub" id="slotRandomPickSub">
+                START를 누르면 번호가 돌아갑니다.
+              </div>
+
+              <div class="slot-machine-base">
+                <button
+                  class="slot-side-btn"
+                  type="button"
+                  aria-hidden="true"
+                ></button>
+
+                <button
+                  class="slot-start-btn"
+                  id="btnStartSlotMachine"
+                  type="button"
+                >
+                  START
+                </button>
+
+                <button
+                  class="slot-side-btn"
+                  type="button"
+                  aria-hidden="true"
+                ></button>
+              </div>
             </div>
           </div>
         </div>

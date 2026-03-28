@@ -328,18 +328,25 @@ input[type="number"]:focus {
   color: #111;
 }
 
-#btnRandomPick {
+.random-pick-buttons {
   position: absolute;
   right: 10px;
   top: 50%;
   transform: translateY(-50%);
+  display: flex;
+  gap: 8px;
+}
+
+#btnRandomPick,
+#btnSlotRandomPick {
   background: #ff498f;
   color: #fff;
   border: none;
   font-size: 18px;
 }
 
-#btnRandomPick:hover {
+#btnRandomPick:hover,
+#btnSlotRandomPick:hover {
   background: #bd2b63;
 }
 
@@ -436,6 +443,466 @@ input[type="number"]:focus {
     transform: translateY(0);
     filter: brightness(1);
   }
+}
+
+/* ===== 슬롯머신 모달 ===== */
+.slot-machine-modal-card {
+  width: min(560px, 94vw);
+  background: transparent;
+  border: none;
+  box-shadow: none;
+  overflow: visible;
+}
+
+.slot-machine-shell {
+  width: min(420px, 88vw);
+  margin: 10px auto;
+}
+
+.slot-machine-sign {
+  width: 100%;
+  min-height: 74px;
+  background: #d7b8f2;
+  border: 5px solid #1f1f1f;
+  border-radius: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 10px 14px;
+  box-shadow: 0 6px 0 #6f73dc;
+}
+
+.sign-title {
+  font-size: 22px;
+  font-weight: 1000;
+  color: #111;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.sign-bulb {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: #f4e53b;
+  border: 3px solid #222;
+  flex: 0 0 auto;
+}
+
+.sign-bulb.orange {
+  background: #f4a03a;
+}
+
+.slot-machine-cabinet {
+  position: relative;
+  margin-top: 12px;
+  background: #eee52e;
+  border: 5px solid #1f1f1f;
+  border-radius: 0 0 28px 28px;
+  padding: 26px 18px 126px;
+  box-shadow: 0 12px 24px rgba(0, 0, 0, 0.2);
+}
+
+.slot-close-btn {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  z-index: 5;
+  padding: 6px 10px;
+  border-radius: 10px;
+  border: 2px solid #1f1f1f;
+  background: rgba(255, 255, 255, 0.86);
+  font-size: 13px;
+  font-weight: 900;
+}
+
+.slot-screen-frame {
+  margin-top: 18px;
+  background: #6e73dc;
+  border: 5px solid #1f1f1f;
+  border-radius: 24px;
+  padding: 12px 12px 14px;
+}
+
+.slot-bulbs {
+  display: flex;
+  justify-content: space-between;
+  gap: 4px;
+  margin-bottom: 10px;
+}
+
+.slot-bulbs span {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: #f4e53b;
+  border: 2px solid #2a2a2a;
+  flex: 0 0 auto;
+}
+
+.slot-bulbs span:nth-child(even) {
+  background: #f4a03a;
+}
+
+.slot-screen {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+}
+
+.slot-window {
+  width: 104px;
+  height: 146px;
+  background: linear-gradient(180deg, #f4f4f4 0%, #dcdcdc 100%);
+  border: 5px solid #3f49b8;
+  border-radius: 16px;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.slot-reel {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 72px;
+  font-weight: 1000;
+  color: #111;
+  line-height: 1;
+  user-select: none;
+}
+
+.slot-dash {
+  width: 24px;
+  text-align: center;
+  flex: 0 0 auto;
+  font-size: 58px;
+  font-weight: 1000;
+  color: #3f3f3f;
+  line-height: 1;
+}
+
+.slot-machine-sub {
+  margin-top: 18px;
+  text-align: center;
+  font-size: 14px;
+  font-weight: 900;
+  color: #4a4a4a;
+}
+
+.slot-machine-base {
+  position: absolute;
+  left: 50%;
+  bottom: -5px;
+  transform: translateX(-50%);
+  width: calc(100% + 10px);
+  background: #6e73dc;
+  border: 5px solid #1f1f1f;
+  border-top: none;
+  border-bottom-left-radius: 24px;
+  border-bottom-right-radius: 24px;
+  padding: 26px 20px 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.slot-side-btn {
+  width: 50px;
+  height: 24px;
+  border-radius: 999px;
+  border: 4px solid #6f4f92;
+  background: #dcb7ef;
+  padding: 0;
+  cursor: default;
+}
+
+.slot-start-btn {
+  min-width: 170px;
+  height: 54px;
+  border-radius: 14px;
+  border: 4px solid #8d7600;
+  background: #f4e53b;
+  color: #111;
+  font-size: 24px;
+  font-weight: 1000;
+  box-shadow: 0 6px 0 #c3a700;
+}
+
+.slot-start-btn:hover {
+  filter: brightness(0.97);
+}
+
+.slot-reel.spinning {
+  animation: slotSpinBounce 0.08s linear infinite;
+}
+
+@keyframes slotSpinBounce {
+  0% {
+    transform: translateY(-5px);
+    opacity: 0.92;
+  }
+  50% {
+    transform: translateY(5px);
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(-5px);
+    opacity: 0.92;
+  }
+}
+
+@media (max-width: 640px) {
+  .slot-machine-shell {
+    width: min(340px, 90vw);
+  }
+
+  .slot-machine-sign {
+    min-height: 60px;
+    gap: 7px;
+    padding: 8px 10px;
+  }
+
+  .sign-title {
+    font-size: 18px;
+  }
+
+  .sign-bulb {
+    width: 12px;
+    height: 12px;
+    border-width: 2px;
+  }
+
+  .slot-machine-cabinet {
+    padding: 20px 14px 110px;
+  }
+
+  .slot-window {
+    width: 82px;
+    height: 116px;
+  }
+
+  .slot-reel {
+    font-size: 56px;
+  }
+
+  .slot-dash {
+    font-size: 48px;
+    width: 18px;
+  }
+
+  .slot-start-btn {
+    min-width: 140px;
+    height: 48px;
+    font-size: 20px;
+  }
+
+  .slot-side-btn {
+    width: 40px;
+    height: 20px;
+  }
+
+  .slot-machine-sub {
+    font-size: 12px;
+  }
+}
+
+.slot-reel.spinning {
+  animation: slotSpinBounce 0.11s linear infinite;
+}
+
+@keyframes slotSpinBounce {
+  0% {
+    transform: translateY(-3px);
+    filter: blur(0.2px);
+  }
+  50% {
+    transform: translateY(3px);
+    filter: blur(1px);
+  }
+  100% {
+    transform: translateY(-3px);
+    filter: blur(0.2px);
+  }
+}
+
+#btnStartSlotMachine:hover {
+  filter: brightness(0.96);
+}
+
+@media (max-width: 640px) {
+  .slot-machine-3 {
+    width: min(360px, 92vw);
+    padding: 24px 18px 20px;
+  }
+
+  .slot-machine-3::before {
+    top: -72px;
+    height: 60px;
+    font-size: 20px;
+  }
+
+  .slot-machine-3::after {
+    bottom: -98px;
+    height: 96px;
+  }
+
+  .slot-window {
+    width: 82px;
+    height: 118px;
+  }
+
+  .slot-reel {
+    font-size: 56px;
+  }
+
+  .slot-dash {
+    font-size: 54px;
+  }
+
+  #btnStartSlotMachine {
+    min-width: 150px;
+    height: 50px;
+    font-size: 22px;
+    bottom: -74px;
+  }
+
+  #slotRandomPickSub {
+    bottom: -46px;
+    width: 190px;
+    font-size: 12px;
+  }
+}
+
+.deck-pick-body {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.deck-control-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.deck-control-row label {
+  font-size: 15px;
+  font-weight: 900;
+  white-space: nowrap;
+}
+
+.deck-control-row input {
+  width: 120px;
+}
+
+.deck-stack-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+  min-height: 220px;
+  justify-content: center;
+}
+
+.deck-stack {
+  position: relative;
+  width: 180px;
+  height: 130px;
+}
+
+.deck-back-card {
+  position: absolute;
+  inset: 0;
+  border-radius: 14px;
+  background: linear-gradient(180deg, #ff77aa, #ff3f87);
+  border: 3px solid #ffd6e5;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
+}
+
+.deck-back-card.shaking {
+  animation: deckShake 0.25s ease-in-out infinite alternate;
+}
+
+@keyframes deckShake {
+  from {
+    margin-left: -4px;
+  }
+  to {
+    margin-left: 4px;
+  }
+}
+
+.deck-status {
+  padding-top: 30px;
+  font-size: 16px;
+  font-weight: 900;
+  color: #6b4a57;
+}
+
+.pick-cards {
+  display: flex;
+  justify-content: center;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.pick-card {
+  width: 140px;
+  height: 190px;
+  border: none;
+  background: transparent;
+  perspective: 1000px;
+  padding: 0;
+}
+
+.pick-card-front,
+.pick-card-back {
+  width: 100%;
+  height: 100%;
+  border-radius: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 1000;
+  backface-visibility: hidden;
+  transition: transform 0.4s ease;
+  position: absolute;
+  inset: 0;
+}
+
+.pick-card-front {
+  background: linear-gradient(180deg, #ff77aa, #ff3f87);
+  color: #fff;
+  border: 3px solid #ffd6e5;
+  font-size: 24px;
+}
+
+.pick-card-back {
+  background: #fff;
+  color: #111;
+  border: 3px solid #ffd6e5;
+  transform: rotateY(180deg);
+  font-size: 30px;
+}
+
+.pick-card {
+  position: relative;
+}
+
+.pick-card.selected .pick-card-front,
+.pick-card.opened .pick-card-front {
+  transform: rotateY(180deg);
+}
+
+.pick-card.selected .pick-card-back,
+.pick-card.opened .pick-card-back {
+  transform: rotateY(360deg);
 }
 
 .grid-wrap {
