@@ -66,6 +66,10 @@ const remainingCountEl =
   document.getElementById("remainingCount") ||
   document.getElementById("remainingCountModal");
 
+const btnFinishTurnEl = document.getElementById("btnFinishTurn");
+const btnMoveToBackEl = document.getElementById("btnMoveToBack");
+const queueListEl = document.getElementById("queueList");
+
 const btnRandomPickEl = document.getElementById("btnRandomPick");
 
 const logoImgEl = document.getElementById("logoImg");
@@ -89,6 +93,7 @@ const btnOpenSettingsEl = document.getElementById("btnOpenSettings");
 const settingsModalEl = document.getElementById("settingsModal");
 const btnCloseSettingsEl = document.getElementById("btnCloseSettings");
 const btnSaveSettingsEl = document.getElementById("btnSaveSettings");
+
 // const settingsNumbersEl = document.getElementById("settingsNumbers");
 const settingsPrizesEl = document.getElementById("settingsPrizes");
 
@@ -105,6 +110,7 @@ const btnRebuildEl = document.getElementById("btnRebuild");
 
 const btnToggleHistoryEl = document.getElementById("btnToggleHistory");
 // const historyPanelEl = document.querySelector(".history-panel");
+
 // History modal
 const historyModalEl = document.getElementById("historyModal");
 const btnCloseHistoryModalEl = document.getElementById("btnCloseHistoryModal");
@@ -129,14 +135,6 @@ const btnAccessEnterEl = document.getElementById("btnAccessEnter");
 const toastEl = document.getElementById("toast");
 
 // Settings UI (intuitive)
-// const poolSingleEl = document.getElementById("poolSingle");
-// const poolFromEl = document.getElementById("poolFrom");
-// const poolToEl = document.getElementById("poolTo");
-// const btnPoolAddSingleEl = document.getElementById("btnPoolAddSingle");
-// const btnPoolAddRangeEl = document.getElementById("btnPoolAddRange");
-// const btnPoolClearEl = document.getElementById("btnPoolClear");
-// const poolChipsEl = document.getElementById("poolChips");
-
 const btnPrizeAddRowEl = document.getElementById("btnPrizeAddRow");
 const prizeRowsEl = document.getElementById("prizeRows");
 
@@ -346,6 +344,8 @@ async function initApp() {
  ***********************/
 
 btnAccessEnterEl.addEventListener("click", tryEnterWithCode);
+btnFinishTurnEl?.addEventListener("click", finishCurrentTurn);
+btnMoveToBackEl?.addEventListener("click", moveCurrentToBack);
 
 btnRandomPickEl.addEventListener("click", pickRandomKuji);
 
@@ -374,11 +374,17 @@ settingsModalEl.addEventListener("click", (e) => {
 });
 
 // 초기화: "이미 깐 쿠지 유지", "기록(세션) 멈춤", "이름만 지움"
-btnResetSessionEl.addEventListener("click", () => {
+btnResetSessionEl.addEventListener("click", async () => {
+  const ok = await showConfirm(
+    "현재 진행 중인 사람과 대기줄을 모두 초기화할까요?\n(쿠지 기록은 유지됩니다.)",
+  );
+  if (!ok) return;
+
   state.sessionName = null;
+  state.queue = [];
   nameInputEl.value = "";
   saveState();
-  renderStatus();
+  renderAll();
 });
 
 btnCloseAlertEl.addEventListener("click", closeAlert);
@@ -501,11 +507,142 @@ function startSessionFromInput() {
     nameInputEl.focus();
     return;
   }
-  state.sessionName = name;
+
+  // 현재 사람 없으면 바로 시작
+  if (!state.sessionName) {
+    state.sessionName = name;
+    nameInputEl.value = "";
+    saveState();
+    renderAll();
+    showToast(`${name}님 시작!`);
+    return;
+  }
+
+  // 현재 사람과 같으면 중복 방지
+  if (state.sessionName === name) {
+    showAlert("이미 현재 진행 중인 닉네임입니다.");
+    return;
+  }
+
+  // 대기열 중복 방지
+  if (state.queue.includes(name)) {
+    showAlert("이미 대기줄에 있는 닉네임입니다.");
+    return;
+  }
+
+  // 현재 사람이 있으면 대기열에 추가
+  state.queue.push(name);
+  nameInputEl.value = "";
   saveState();
-  renderStatus();
+  renderAll();
+  showToast(`${name}님이 대기줄에 등록됐어요.`);
 }
 
+function advanceToNextSession() {
+  if (state.queue.length > 0) {
+    state.sessionName = state.queue.shift();
+  } else {
+    state.sessionName = null;
+  }
+
+  saveState();
+  renderAll();
+}
+
+function finishCurrentTurn() {
+  if (!state.sessionName) {
+    showAlert("현재 진행 중인 사람이 없습니다.");
+    return;
+  }
+
+  const finishedName = state.sessionName;
+  advanceToNextSession();
+
+  if (state.sessionName) {
+    showToast(`${finishedName}님 종료 → ${state.sessionName}님 차례입니다.`);
+  } else {
+    showToast(`${finishedName}님 종료. 현재 대기줄이 비어 있어요.`);
+  }
+}
+
+function moveCurrentToBack() {
+  if (!state.sessionName) {
+    showAlert("현재 진행 중인 사람이 없습니다.");
+    return;
+  }
+
+  if (state.queue.length === 0) {
+    showAlert("뒤로 설 대기줄이 아직 없습니다.");
+    return;
+  }
+
+  const current = state.sessionName;
+
+  // 현재 사람을 맨 뒤로
+  state.queue.push(current);
+
+  // 맨 앞 대기자를 현재 사람으로
+  state.sessionName = state.queue.shift();
+
+  saveState();
+  renderAll();
+
+  showToast(`${current}님이 뒷줄로 이동했어요.`);
+}
+
+function renderQueue() {
+  if (!queueListEl) return;
+
+  queueListEl.innerHTML = "";
+
+  if (!Array.isArray(state.queue) || state.queue.length === 0) {
+    const empty = document.createElement("span");
+    empty.className = "queue-empty";
+    empty.textContent = "대기 중인 사람이 없어요.";
+    queueListEl.appendChild(empty);
+    return;
+  }
+
+  state.queue.forEach((name, idx) => {
+    const chip = document.createElement("div");
+    chip.className = "queue-chip";
+
+    const text = document.createElement("span");
+    text.className = "queue-chip-text";
+    text.textContent = `${idx + 1}.${name}`;
+
+    const removeBtn = document.createElement("button");
+    removeBtn.className = "queue-remove-btn";
+    removeBtn.type = "button";
+    removeBtn.textContent = "✕";
+    removeBtn.setAttribute("aria-label", `${name} 대기줄 삭제`);
+
+    removeBtn.addEventListener("click", async (e) => {
+      e.stopPropagation();
+
+      const ok = await showConfirm(`${name}님을 대기줄에서 삭제할까요?`);
+      if (!ok) return;
+
+      removeFromQueue(idx);
+    });
+
+    chip.appendChild(text);
+    chip.appendChild(removeBtn);
+    queueListEl.appendChild(chip);
+  });
+}
+
+function removeFromQueue(index) {
+  if (!Array.isArray(state.queue)) return;
+  if (index < 0 || index >= state.queue.length) return;
+
+  const removedName = state.queue[index];
+  state.queue.splice(index, 1);
+
+  saveState();
+  renderAll();
+  showToast(`${removedName}님이 대기줄에서 빠졌어요.`);
+}
 // function onClickKuji(index, el) {
 //   if (state.opened[index]) return;
 
@@ -1134,6 +1271,7 @@ function showToast(message, duration = 1800) {
 
 function renderAll() {
   renderStatus();
+  renderQueue();
   renderGrid();
   renderHistory();
   renderPrizeList();
@@ -1142,7 +1280,7 @@ function renderAll() {
 
 function renderStatus() {
   if (state.sessionName) {
-    statusTextEl.textContent = "기록 중";
+    statusTextEl.textContent = "진행 중";
     currentNameBadgeEl.textContent = state.sessionName;
   } else {
     statusTextEl.textContent = "대기";
@@ -2021,12 +2159,13 @@ function makeFreshState(total) {
   shuffle(arr);
 
   return {
-    createdAtISO: new Date().toISOString(), // ✅ 쿠지판 생성일
+    createdAtISO: new Date().toISOString(),
     total,
     assignments: arr,
     opened: Array.from({ length: total }, () => false),
     history: [],
     sessionName: null,
+    queue: [],
   };
 }
 
@@ -2057,6 +2196,9 @@ function loadState() {
     const history = Array.isArray(parsed.history) ? parsed.history : [];
     const sessionName =
       typeof parsed.sessionName === "string" ? parsed.sessionName : null;
+    const queue = Array.isArray(parsed.queue)
+      ? parsed.queue.filter((v) => typeof v === "string" && v.trim())
+      : [];
 
     if (!assignments || assignments.length !== total) {
       assignments = Array.from({ length: total }, (_, i) => i + 1);
@@ -2066,7 +2208,15 @@ function loadState() {
       opened = Array.from({ length: total }, () => false);
     }
 
-    return { createdAtISO, total, assignments, opened, history, sessionName };
+    return {
+      createdAtISO,
+      total,
+      assignments,
+      opened,
+      history,
+      sessionName,
+      queue,
+    };
   } catch {
     return makeFreshState(DEFAULT_TOTAL);
   }

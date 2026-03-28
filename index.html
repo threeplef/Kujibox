@@ -105,10 +105,20 @@
             </div>
 
             <button class="primary" id="btnStart">시작</button>
+            <button class="ghost" id="btnFinishTurn">끝</button>
+            <button class="ghost" id="btnMoveToBack">뒷줄</button>
             <button class="ghost" id="btnResetSession">초기화</button>
+
             <div class="status" id="statusLine">
               상태: <strong id="statusText">대기</strong>
               <span class="badge" id="currentNameBadge">이름 없음</span>
+            </div>
+
+            <div class="queue-box" id="queueBox">
+              <div class="queue-title">대기줄</div>
+              <div class="queue-list" id="queueList">
+                <span class="queue-empty">대기 중인 사람이 없어요.</span>
+              </div>
             </div>
 
             <div

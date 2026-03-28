@@ -1467,3 +1467,76 @@ input[type="number"]:focus {
   white-space: nowrap;
   transform: rotate(-8deg);
 }
+
+.queue-box {
+  background: #fff;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 10px 12px;
+  margin-bottom: 10px;
+  box-shadow: var(--shadow);
+}
+
+.queue-title {
+  font-size: 14px;
+  font-weight: 900;
+  margin-bottom: 8px;
+  color: #333;
+}
+
+.queue-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.queue-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 8px 6px 10px;
+  border-radius: 999px;
+  background: #fff4f8;
+  border: 1px solid #ffc7db;
+  color: #c91f67;
+  font-size: 14px;
+  font-weight: 900;
+  white-space: nowrap;
+  flex: 0 0 auto;
+}
+
+.queue-chip-text {
+  white-space: nowrap;
+}
+
+.queue-remove-btn {
+  width: 22px;
+  height: 22px;
+  border: none;
+  border-radius: 999px;
+  background: #ffd7e6;
+  color: #b31257;
+  font-size: 13px;
+  font-weight: 1000;
+  line-height: 1;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+}
+
+.queue-remove-btn:hover {
+  transform: scale(1.05);
+  background: #ffc2d9;
+}
+
+.queue-remove-btn:active {
+  transform: scale(0.96);
+}
+
+.queue-empty {
+  color: #888;
+  font-size: 13px;
+  font-weight: 700;
+}
