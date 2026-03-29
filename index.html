@@ -43,7 +43,7 @@
                       id="logoImg"
                       src="./images/logo2.png"
                       class="logo-img"
-                      style="width: 300px"
+                      style="width: 250px"
                     />
                     <!-- <div
                     class="logo-text black-han-sans-regular"
@@ -66,10 +66,46 @@
                 </div>
               </div>
             </div>
+            <div class="prize-summary">
+              <div></div>
+              <button
+                class="ghost prize-summary-btn"
+                id="btnOpenPrizeListModal"
+                type="button"
+              >
+                전체 보기
+              </button>
+            </div>
 
-            <div id="prizeList" class="prize-grid"></div>
+            <div id="prizeListMain" class="prize-grid"></div>
           </div>
         </section>
+
+        <!-- PRIZE LIST MODAL -->
+        <div class="modal hidden" id="prizeListModal" aria-hidden="true">
+          <div
+            class="modal-card prize-list-modal-card"
+            role="dialog"
+            aria-modal="true"
+          >
+            <div class="modal-head">
+              <h3>상품 목록</h3>
+              <button class="ghost1" id="btnClosePrizeListModal">닫기</button>
+            </div>
+
+            <div class="modal-body prize-list-modal-body">
+              <div class="prize-list-modal-top">
+                <div class="prize-summary-sub" id="prizeModalSummaryText">
+                  남은 상품 0개
+                </div>
+              </div>
+              <div
+                id="prizeListModalGrid"
+                class="prize-grid prize-grid-modal"
+              ></div>
+            </div>
+          </div>
+        </div>
 
         <!-- CENTER: GRID -->
         <section

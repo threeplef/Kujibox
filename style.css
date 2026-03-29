@@ -149,7 +149,7 @@ main {
 
 .layout {
   display: grid;
-  grid-template-columns: 800px 1fr;
+  grid-template-columns: 600px 1fr;
   gap: 14px;
   align-items: stretch;
   min-height: calc(100vh - 64px - 32px);
@@ -290,6 +290,14 @@ tbody td {
   flex-wrap: wrap;
   align-items: center;
   margin-bottom: 10px;
+}
+
+#currentNameBadge {
+  background: #fff4f8;
+  border: 1px solid #ffc7db;
+  color: #c91f67;
+  font-weight: 700;
+  font-size: 20px;
 }
 
 .input {
@@ -462,7 +470,7 @@ input[type="number"]:focus {
 .slot-machine-sign {
   width: 100%;
   min-height: 74px;
-  background: #d7b8f2;
+  background: #fdb8d1;
   border: 5px solid #1f1f1f;
   border-radius: 18px;
   display: flex;
@@ -470,7 +478,6 @@ input[type="number"]:focus {
   justify-content: center;
   gap: 10px;
   padding: 10px 14px;
-  box-shadow: 0 6px 0 #6f73dc;
 }
 
 .sign-title {
@@ -496,17 +503,17 @@ input[type="number"]:focus {
 
 .slot-machine-cabinet {
   position: relative;
-  margin-top: 12px;
-  background: #eee52e;
+  margin-top: 3px;
+  background: #ff7ba7;
   border: 5px solid #1f1f1f;
-  border-radius: 0 0 28px 28px;
+  border-radius: 18px;
   padding: 26px 18px 126px;
   box-shadow: 0 12px 24px rgba(0, 0, 0, 0.2);
 }
 
 .slot-close-btn {
   position: absolute;
-  top: 10px;
+  top: 7px;
   right: 10px;
   z-index: 5;
   padding: 6px 10px;
@@ -588,11 +595,11 @@ input[type="number"]:focus {
 }
 
 .slot-machine-sub {
-  margin-top: 18px;
+  margin-top: 25px;
   text-align: center;
-  font-size: 14px;
+  font-size: 20px;
   font-weight: 900;
-  color: #4a4a4a;
+  color: #2b2b2b;
 }
 
 .slot-machine-base {
@@ -1684,7 +1691,7 @@ input[type="number"]:focus {
   display: flex;
   align-items: center;
   justify-content: space-around;
-  gap: 50px;
+  gap: 10px;
   border: 1px solid #eee;
   border-radius: 14px;
   background: linear-gradient(180deg, #fff1f6, #ffe7f0);
@@ -1723,8 +1730,8 @@ input[type="number"]:focus {
   flex-direction: column;
   align-items: center;
   gap: 8px;
-  margin-right: 10px;
-  max-width: 250px;
+  margin-right: 20px;
+  max-width: 200px;
 }
 
 .left-hero-figure img {
@@ -1771,7 +1778,7 @@ input[type="number"]:focus {
 /* ===== Prize grid cards (left panel) ===== */
 @media (min-width: 1100px) {
   .prize-grid {
-    grid-template-columns: repeat(4, minmax(0, 1fr));
+    grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 }
 
@@ -1783,7 +1790,7 @@ input[type="number"]:focus {
   padding-top: 8px;
   display: grid;
   grid-template-rows: 64px auto; /* 상품명 높이 고정 + 번호영역 */
-  gap: 6px;
+  /* gap: 6px; */
   align-items: start;
 }
 
@@ -1797,8 +1804,107 @@ input[type="number"]:focus {
 /* ---------- GRID ---------- */
 .prize-grid {
   display: grid;
-  grid-template-columns: repeat(4, 1fr); /* 🔥 사진처럼 4열 */
+  grid-template-columns: repeat(3, 1fr); /* 🔥 사진처럼 4열 */
   gap: 14px;
+}
+
+.prize-summary {
+  display: flex;
+  justify-content: space-between;
+  padding-bottom: 10px;
+}
+
+.prize-summary-card {
+  background: rgba(255, 255, 255, 0.82);
+  border: 1px solid #f2c7d8;
+  border-radius: 16px;
+  padding: 14px;
+  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.06);
+}
+
+.prize-summary-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.prize-summary-title {
+  font-size: 22px;
+  font-weight: 1000;
+  color: #222;
+}
+
+.prize-summary-sub {
+  padding-left: 10px;
+  font-size: 20px;
+  font-weight: 900;
+  color: #c91f67;
+}
+
+.prize-summary-btn {
+  flex: 0 0 auto;
+}
+
+.prize-summary-preview {
+  display: grid;
+  gap: 10px;
+}
+
+.prize-summary-chip {
+  display: grid;
+  grid-template-columns: 72px minmax(0, 1fr) auto;
+  gap: 10px;
+  align-items: center;
+  padding: 12px 14px;
+  border-radius: 14px;
+  border: 1px solid #f3cedb;
+  background: linear-gradient(180deg, #fff8fb, #fff2f7);
+}
+
+.prize-summary-chip.soldout {
+  opacity: 0.62;
+  background: #f6f6f7;
+}
+
+.prize-summary-chip-num {
+  font-weight: 1000;
+  color: #9a2e5f;
+}
+
+.prize-summary-chip-name {
+  min-width: 0;
+  font-family: "OngleipParkDahyeon", sans-serif;
+  font-size: 22px;
+  font-weight: 1000;
+  color: #222;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.prize-summary-chip-state {
+  font-size: 13px;
+  font-weight: 900;
+  color: #666;
+  white-space: nowrap;
+}
+
+.prize-list-modal-card {
+  width: min(2000px, 100vw);
+}
+
+.prize-list-modal-body {
+  padding-top: 18px;
+}
+
+.prize-list-modal-top {
+  margin-bottom: 14px;
+}
+
+.prize-grid-modal {
+  grid-template-columns: repeat(8, minmax(0, 1fr));
 }
 
 /* ---------- CARD ---------- */
@@ -1811,7 +1917,7 @@ input[type="number"]:focus {
   padding: 12px;
   box-shadow: 0 10px 20px rgba(0, 0, 0, 0.08);
   text-align: center;
-  height: 350px;
+  height: 325px;
   display: flex;
   flex-direction: column;
   justify-content: space-between;
@@ -1999,4 +2105,24 @@ input[type="number"]:focus {
   color: #888;
   font-size: 13px;
   font-weight: 700;
+}
+
+.prize-card.is-modal-card.soldout {
+  opacity: 0.55;
+  filter: grayscale(0.35) brightness(0.7);
+}
+
+.prize-card.is-modal-card .prize-thumb img {
+  object-fit: cover;
+}
+
+.prize-remain-text {
+  margin-top: 6px;
+  font-size: 14px;
+  font-weight: 900;
+  color: #cfcfcf;
+}
+
+.prize-card.is-modal-card:not(.soldout) .prize-remain-text {
+  color: #ddd;
 }

@@ -115,7 +115,23 @@ const logoImgInputEl = document.getElementById("logoImgInput");
 const btnLogoPickFileEl = document.getElementById("btnLogoPickFile");
 const logoFileInputEl = document.getElementById("logoFileInput");
 
-const prizeListEl = document.getElementById("prizeList");
+const prizeListEl = document.getElementById("prizeListMain"); // 바깥 목록
+const prizeListModalGridEl = document.getElementById("prizeListModalGrid"); // 모달 목록
+const prizeSummaryTextEl = document.getElementById("prizeSummaryText");
+const prizeSummaryPreviewEl = document.getElementById("prizeSummaryPreview");
+const btnOpenPrizeListModalEl = document.getElementById(
+  "btnOpenPrizeListModal",
+);
+const prizeListModalEl = document.getElementById("prizeListModal");
+const btnClosePrizeListModalEl = document.getElementById(
+  "btnClosePrizeListModal",
+);
+const prizeModalSummaryTextEl = document.getElementById(
+  "prizeModalSummaryText",
+);
+const prizeModalRemainCountEl = document.getElementById(
+  "prizeModalRemainCount",
+);
 
 const heroImgEl = document.getElementById("heroImg");
 const heroCodeEl = document.getElementById("heroCode");
@@ -392,6 +408,9 @@ btnStartShuffleEl?.addEventListener("click", startShuffleAndShowCards);
 btnSlotRandomPickEl?.addEventListener("click", openSlotRandomPickModal);
 btnCloseSlotRandomPickEl?.addEventListener("click", closeSlotRandomPickModal);
 btnStartSlotMachineEl?.addEventListener("click", startSlotMachinePick);
+
+btnOpenPrizeListModalEl?.addEventListener("click", openPrizeListModal);
+btnClosePrizeListModalEl?.addEventListener("click", closePrizeListModal);
 
 slotRandomPickModalEl?.addEventListener("click", (e) => {
   e.stopPropagation();
@@ -691,31 +710,101 @@ function removeFromQueue(index) {
   renderAll();
   showToast(`${removedName}님이 대기줄에서 빠졌어요.`);
 }
-// function onClickKuji(index, el) {
-//   if (state.opened[index]) return;
 
-//   // 이름(세션)이 없으면 기록 시작 전이므로 까기 금지 (기존 로직 유지)
-//   if (!state.sessionName) {
-//     alert("이름 입력 후 Enter(또는 시작)를 눌러 기록을 시작해 주세요.");
-//     nameInputEl.focus();
-//     return;
-//   }
+function getPrizeEntries() {
+  const hitCount = {};
+  for (const h of state.history) {
+    const n = h.number;
+    hitCount[n] = (hitCount[n] || 0) + 1;
+  }
 
-//   openKujiOpenModal(index, el);
+  return Object.keys(PRIZES)
+    .map(Number)
+    .map((num) => {
+      const item = PRIZES[num];
+      const hits = hitCount[num] || 0;
+      const limit = Number.isFinite(item.remaining)
+        ? Number(item.remaining)
+        : 1;
+      const soldOut = hits >= Math.max(1, limit);
 
-//   state.opened[index] = true;
+      return {
+        num,
+        item,
+        hits,
+        limit,
+        soldOut,
+        remainingCount: Math.max(0, Math.max(1, limit) - hits),
+      };
+    })
+    .sort((a, b) => {
+      if (a.soldOut !== b.soldOut) {
+        return a.soldOut ? 1 : -1;
+      }
+      return a.num - b.num;
+    });
+}
 
-//   const revealedNumber = state.assignments[index];
-//   state.history.unshift({
-//     name: state.sessionName,
-//     number: revealedNumber,
-//     kujiIndex: index + 1,
-//     tsISO: new Date().toISOString(),
-//   });
+function renderPrizeSummary() {
+  const prizeEntries = getPrizeEntries();
 
-//   saveState();
-//   renderAll();
-// }
+  // 남아 있는 "상품 종류 수"
+  const remainCount = prizeEntries.filter((entry) => !entry.soldOut).length;
+
+  // 품절된 "상품 종류 수"
+  const soldOutCount = prizeEntries.length - remainCount;
+
+  // 실제 남아 있는 "총 수량"
+  const remainTotalCount = prizeEntries.reduce(
+    (sum, entry) => sum + Math.max(0, entry.remainingCount || 0),
+    0,
+  );
+
+  // 바깥 요약 텍스트가 있을 때만 갱신
+  if (prizeSummaryTextEl) {
+    prizeSummaryTextEl.textContent = `남은 상품 ${remainCount - 1}개 · 품절 ${soldOutCount}개`;
+  }
+
+  // 모달 요약 텍스트 갱신
+  if (prizeModalSummaryTextEl) {
+    prizeModalSummaryTextEl.textContent = `남은 상품 ${remainTotalCount - 1}개`;
+  }
+
+  // 모달 안 별도 숫자 영역이 있으면 갱신
+  if (prizeModalRemainCountEl) {
+    prizeModalRemainCountEl.textContent = String(remainTotalCount - 1);
+  }
+
+  // 바깥 preview 영역이 있을 때만 렌더
+  if (prizeSummaryPreviewEl) {
+    prizeSummaryPreviewEl.innerHTML = "";
+
+    const previewEntries = prizeEntries.slice(0, 5);
+
+    previewEntries.forEach(({ num, item, soldOut, remainingCount }) => {
+      const chip = document.createElement("div");
+      chip.className = `prize-summary-chip${soldOut ? " soldout" : ""}`;
+
+      const numEl = document.createElement("span");
+      numEl.className = "prize-summary-chip-num";
+      numEl.textContent = `${num}번`;
+
+      const nameEl = document.createElement("span");
+      nameEl.className = "prize-summary-chip-name";
+      nameEl.textContent = item.name;
+
+      const stateEl = document.createElement("span");
+      stateEl.className = "prize-summary-chip-state";
+      stateEl.textContent = soldOut ? "품절" : `잔여 ${remainingCount}`;
+
+      chip.appendChild(numEl);
+      chip.appendChild(nameEl);
+      chip.appendChild(stateEl);
+
+      prizeSummaryPreviewEl.appendChild(chip);
+    });
+  }
+}
 
 function onClickKuji(index, el) {
   if (state.opened[index]) return;
@@ -1753,6 +1842,7 @@ function renderAll() {
   renderQueue();
   renderGrid();
   renderHistory();
+  renderPrizeSummary();
   renderPrizeList();
   renderCounters();
 }
@@ -2045,65 +2135,43 @@ function renderHistoryModal() {
   }
 }
 
-function renderPrizeList() {
-  prizeListEl.innerHTML = "";
+function createPrizeCard(
+  { num, item, hits, soldOut, remainingCount },
+  options = {},
+) {
+  const { isModal = false } = options;
 
-  // 번호별로 나온 횟수 집계
-  const hitCount = {};
-  for (const h of state.history) {
-    const n = h.number;
-    hitCount[n] = (hitCount[n] || 0) + 1;
-  }
+  const card = document.createElement("div");
+  card.className = "prize-card";
 
-  // ✅ 남은 상품 먼저, 품절 상품 나중으로 정렬
-  const prizeEntries = Object.keys(PRIZES)
-    .map(Number)
-    .map((num) => {
-      const item = PRIZES[num];
-      const hits = hitCount[num] || 0;
-      const limit = Number.isFinite(item.remaining)
-        ? Number(item.remaining)
-        : 1;
-      const soldOut = hits >= Math.max(1, limit);
+  if (soldOut) card.classList.add("soldout");
+  if (isModal) card.classList.add("is-modal-card");
 
-      return {
-        num,
-        item,
-        hits,
-        limit,
-        soldOut,
-      };
-    })
-    .sort((a, b) => {
-      // 1순위: 품절 아닌 상품 먼저
-      if (a.soldOut !== b.soldOut) {
-        return a.soldOut ? 1 : -1;
-      }
+  const thumb = document.createElement("div");
+  thumb.className = "prize-thumb";
 
-      // 2순위: 같은 상태끼리는 번호순
-      return a.num - b.num;
-    });
+  const img = document.createElement("img");
+  setImgSrcAsync(img, item.img, `./images/${num}.png`);
+  img.alt = item.name;
 
-  for (const { num, item, hits, soldOut } of prizeEntries) {
-    const card = document.createElement("div");
-    card.className = "prize-card";
+  img.onerror = () => {
+    img.onerror = null;
+    img.src = "./images/placeholder.png";
+  };
 
-    if (soldOut) card.classList.add("soldout");
+  thumb.appendChild(img);
 
-    const thumb = document.createElement("div");
-    thumb.className = "prize-thumb";
+  const meta = document.createElement("div");
+  meta.className = "prize-meta";
 
-    const img = document.createElement("img");
-    setImgSrcAsync(img, item.img, `./images/${num}.png`);
-    img.alt = item.name;
+  const nm = document.createElement("div");
+  nm.className = "prize-name";
+  nm.textContent = `${item.name}`;
 
-    img.onerror = () => {
-      img.onerror = null;
-      img.src = "./images/placeholder.png";
-    };
+  meta.appendChild(nm);
 
-    thumb.appendChild(img);
-
+  // 바깥 목록은 기존처럼 티켓 배지 유지
+  if (!isModal) {
     const numBadge = document.createElement("div");
     numBadge.className = "prize-num-badge";
 
@@ -2116,27 +2184,62 @@ function renderPrizeList() {
     txt.className = "prize-num-text";
     txt.textContent = String(num);
 
-    numBadge.appendChild(bg);
-    numBadge.appendChild(txt);
-
-    const meta = document.createElement("div");
-    meta.className = "prize-meta";
-
-    const nm = document.createElement("div");
-    nm.className = "prize-name";
-    nm.textContent = item.name;
-
-    if (hits > 0) card.classList.add("is-winning");
     if (hits > 0) txt.classList.add("is-winning-text");
 
-    meta.appendChild(nm);
+    numBadge.appendChild(bg);
+    numBadge.appendChild(txt);
     meta.appendChild(numBadge);
-
-    card.appendChild(thumb);
-    card.appendChild(meta);
-
-    prizeListEl.appendChild(card);
   }
+
+  // 모달은 남은 수량 표시
+  // if (isModal) {
+  //   const remainText = document.createElement("div");
+  //   remainText.className = "prize-remain-text";
+  //   remainText.textContent = soldOut ? "SOLD OUT" : `수량 ${remainingCount}`;
+
+  //   meta.appendChild(remainText);
+  // }
+
+  if (hits > 0 && !isModal) {
+    card.classList.add("is-winning");
+  }
+
+  card.appendChild(thumb);
+  card.appendChild(meta);
+
+  return card;
+}
+
+function renderPrizeList() {
+  if (prizeListEl) prizeListEl.innerHTML = "";
+  if (prizeListModalGridEl) prizeListModalGridEl.innerHTML = "";
+
+  const prizeEntries = getPrizeEntries();
+
+  for (const entry of prizeEntries) {
+    // 바깥 목록
+    if (prizeListEl) {
+      prizeListEl.appendChild(createPrizeCard(entry, { isModal: false }));
+    }
+
+    // 모달 목록
+    if (prizeListModalGridEl) {
+      prizeListModalGridEl.appendChild(
+        createPrizeCard(entry, { isModal: true }),
+      );
+    }
+  }
+}
+
+function openPrizeListModal() {
+  renderPrizeList();
+  prizeListModalEl?.classList.remove("hidden");
+  prizeListModalEl?.setAttribute("aria-hidden", "false");
+}
+
+function closePrizeListModal() {
+  prizeListModalEl?.classList.add("hidden");
+  prizeListModalEl?.setAttribute("aria-hidden", "true");
 }
 
 function applyHeroToUI() {
