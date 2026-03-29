@@ -1093,12 +1093,6 @@ input[type="number"]:focus {
   display: none !important;
 }
 
-.logo-img {
-  display: block;
-  margin: 0 auto 10px;
-  object-fit: contain;
-}
-
 .logo-upload-box {
   text-align: center;
   margin-bottom: 10px;
@@ -1689,9 +1683,8 @@ input[type="number"]:focus {
 .left-hero {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  padding: 10px 10px 14px;
+  justify-content: space-around;
+  gap: 50px;
   border: 1px solid #eee;
   border-radius: 14px;
   background: linear-gradient(180deg, #fff1f6, #ffe7f0);
@@ -1907,13 +1900,13 @@ input[type="number"]:focus {
 
 .logo-wrap {
   position: relative; /* ✅ 기준점 */
-  width: 250px; /* 이미지와 동일 */
   margin: 0 auto; /* 가운데 정렬 (원하면 제거) */
 }
 
 .logo-img {
   width: 100%;
   display: block;
+  object-fit: contain;
 }
 
 .logo-text {
@@ -1945,7 +1938,7 @@ input[type="number"]:focus {
 }
 
 .queue-title {
-  font-size: 14px;
+  font-size: 18px;
   font-weight: 900;
   margin-bottom: 8px;
   color: #333;
@@ -1966,7 +1959,7 @@ input[type="number"]:focus {
   background: #fff4f8;
   border: 1px solid #ffc7db;
   color: #c91f67;
-  font-size: 14px;
+  font-size: 20px;
   font-weight: 900;
   white-space: nowrap;
   flex: 0 0 auto;

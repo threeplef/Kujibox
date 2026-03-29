@@ -21,19 +21,6 @@
 
     <main>
       <div class="layout">
-        <!-- LEFT: PRIZE LIST -->
-        <!-- <section class="panel">
-          <div class="top-actions">
-            <h3>상품 목록</h3>
-            <button class="ghost1" id="btnOpenSettings">설정</button>
-          </div>
-          <div class="content">
-            <div class="muted" style="font-size: 12px; margin-bottom: 12px">
-              ※ 상품 목록 변경 가능 / 중간에 추가 가능
-            </div>
-            <div id="prizeList"></div>
-          </div>
-        </section> -->
         <!-- LEFT: PRIZE BOARD -->
         <section class="panel prize-panel">
           <div class="content">
@@ -56,7 +43,7 @@
                       id="logoImg"
                       src="./images/logo2.png"
                       class="logo-img"
-                      style="width: 250px"
+                      style="width: 300px"
                     />
                     <!-- <div
                     class="logo-text black-han-sans-regular"
@@ -114,13 +101,6 @@
               <span class="badge" id="currentNameBadge">이름 없음</span>
             </div>
 
-            <div class="queue-box" id="queueBox">
-              <div class="queue-title">대기줄</div>
-              <div class="queue-list" id="queueList">
-                <span class="queue-empty">대기 중인 사람이 없어요.</span>
-              </div>
-            </div>
-
             <div
               style="
                 display: flex;
@@ -147,6 +127,13 @@
               />
               <button class="ghost" id="btnRebuild">재생성</button>
               <button class="ghost" id="btnToggleHistory">기록 보기</button>
+            </div>
+          </div>
+
+          <div class="queue-box" id="queueBox">
+            <div class="queue-title">[ 대기줄 ]</div>
+            <div class="queue-list" id="queueList">
+              <span class="queue-empty">대기 중인 사람이 없어요.</span>
             </div>
           </div>
 
@@ -177,31 +164,6 @@
             <div class="grid" id="grid"></div>
           </div>
         </section>
-
-        <!-- RIGHT: HISTORY -->
-        <!-- <section class="panel history-panel">
-          <div class="top-actions">
-            <h3>기록</h3>
-            <button class="ghost1" id="btnDownload">기록 다운로드</button>
-          </div>
-          <div class="content">
-            <div class="muted" style="font-size: 12px; margin-bottom: 10px">
-              오픈:
-              <span class="badge" id="histCount">0</span>
-              &nbsp;&nbsp;|&nbsp;&nbsp; 남은 쿠지:
-              <span class="badge" id="remainingCount">0</span>
-            </div>
-            <table>
-              <thead>
-                <tr>
-                  <th style="width: 72px">이름</th>
-                  <th>번호</th>
-                </tr>
-              </thead>
-              <tbody id="historyBody"></tbody>
-            </table>
-          </div>
-        </section> -->
       </div>
 
       <!-- RANDOM PICK MODAL -->
@@ -383,40 +345,6 @@
 
           <div class="modal-body">
             <div class="cfg-grid">
-              <!-- 번호 풀 -->
-              <!-- <div class="cfg-block">
-                <div class="cfg-title">당첨 번호(번호 풀)</div>
-                <div class="muted" style="font-size: 12px; margin-bottom: 8px">
-                  ① 비워두면 “1 ~ 총 쿠지”가 자동으로 랜덤 배정됩니다.<br />
-                  ② 직접 지정하려면 아래에서 “추가”로 번호들을 만들고
-                  저장하세요.
-                </div>
-
-                <div class="cfg-row">
-                  <input id="poolSingle" type="number" placeholder="번호 1개" />
-                  <button class="ghost" id="btnPoolAddSingle">추가</button>
-                </div>
-
-                <div class="cfg-row">
-                  <input id="poolFrom" type="number" placeholder="시작" />
-                  <input id="poolTo" type="number" placeholder="끝" />
-                  <button class="ghost" id="btnPoolAddRange">구간 추가</button>
-                </div>
-
-                <div class="cfg-row">
-                  <button class="ghost" id="btnPoolClear">전체 비우기</button>
-                </div>
-
-                <div class="pool-chips" id="poolChips"></div>
-
-                // 기존 textarea는 숨김 저장용(로직 호환용) 
-                <textarea
-                  id="settingsNumbers"
-                  class="ta hidden"
-                  rows="4"
-                ></textarea>
-              </div> -->
-
               <!-- 상품 목록 -->
               <div class="cfg-row">
                 <div class="cfg-title">로고 설정</div>
@@ -470,25 +398,6 @@
                 ></textarea>
               </div>
 
-              <!-- <div class="cfg-row">
-                <input
-                  id="heroCodeInput"
-                  type="text"
-                  placeholder="번호 (예: L.O)"
-                />
-                <input
-                  id="heroNameInput"
-                  type="text"
-                  placeholder="상품명 (예: 코토부키야 네즈코)"
-                />
-              </div>
-              <div class="cfg-row">
-                <input
-                  id="heroImgInput"
-                  type="text"
-                  placeholder="이미지 경로 (예: ./images/hero.png)"
-                />
-              </div> -->
               <div class="cfg-row1">
                 <input id="heroCodeInput" type="text" placeholder="L.O" />
                 <input id="heroNameInput" type="text" placeholder="상품명" />
@@ -517,11 +426,6 @@
             <div class="modal-actions">
               <button class="primary" id="btnSaveSettings">저장</button>
             </div>
-
-            <!-- <div class="muted" style="font-size: 12px">
-              ※ 상품목록을 현재 쿠지에 반영하려면 저장 시 확인 후
-              재생성됩니다(기록은 유지).
-            </div> -->
           </div>
         </div>
       </div>
@@ -551,21 +455,6 @@
                 왼쪽 → 오른쪽으로 드래그해서 까세요
               </div>
             </div>
-
-            <!-- ✅ 당첨 결과 (당첨 번호일 때만 표시) -->
-            <!-- <div class="win-result hidden" id="winResult" aria-live="polite">
-              <div class="win-row">
-                <div class="win-thumb">
-                  <img id="winPrizeImg" alt="당첨 상품 이미지" />
-                </div>
-                <div class="win-meta">
-                  <div class="win-num" id="winPrizeNum"></div> 
-                  <div class="win-badge">🎉 당첨!</div>
-                  <div class="win-name" id="winPrizeName"></div>
-                  <div class="win-note muted" id="winPrizeNote"></div> 
-                </div>
-              </div>
-            </div> -->
           </div>
         </div>
       </div>
@@ -613,9 +502,6 @@
 
           <div class="modal-body">
             <div id="alertMessage" class="alert-message"></div>
-            <!-- <div class="modal-actions">
-              <button class="primary" id="btnOkAlert">확인</button>
-            </div> -->
           </div>
         </div>
       </div>

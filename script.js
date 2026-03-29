@@ -1,7 +1,8 @@
 /***********************
  * CONFIG (원하는 대로 수정)
  ***********************/
-const DEFAULT_TOTAL = 90;
+const DEFAULT_TOTAL = 300;
+const SLOT_TARGET_ONE_PER = 30; // 슬롯픽 당첨 목표: 30장당 1번
 
 // "번호"에 대응되는 상품 목록(예시). 필요하면 마음대로 수정하세요.
 // - key: 번호(문자열/숫자)
@@ -15,14 +16,28 @@ const DEFAULT_LOGO = "./images/logo2.png";
 
 // 기본 상품 목록(기존 PRIZES 내용을 그대로 여기로 옮기세요)
 const DEFAULT_PRIZES = {
-  11: { name: "상품1", remaining: 1 },
-  22: { name: "상품2", remaining: 1 },
-  33: { name: "상품3", remaining: 1 },
-  44: { name: "상품4", remaining: 1 },
-  55: { name: "상품5", remaining: 1 },
-  66: { name: "상품6", remaining: 1 },
-  77: { name: "상품7", remaining: 1 },
-  88: { name: "상품8", remaining: 1 },
+  7: { name: "황금티켓", remaining: 1 },
+  15: { name: "상품1", remaining: 1 },
+  30: { name: "상품2", remaining: 1 },
+  45: { name: "상품3", remaining: 1 },
+  60: { name: "상품4", remaining: 1 },
+  75: { name: "상품5", remaining: 1 },
+  90: { name: "상품6", remaining: 1 },
+  105: { name: "상품7", remaining: 1 },
+  120: { name: "상품8", remaining: 1 },
+  135: { name: "상품9", remaining: 1 },
+  150: { name: "상품10", remaining: 1 },
+  165: { name: "상품11", remaining: 1 },
+  180: { name: "상품12", remaining: 1 },
+  195: { name: "상품13", remaining: 1 },
+  205: { name: "상품14", remaining: 1 },
+  220: { name: "상품15", remaining: 1 },
+  235: { name: "상품16", remaining: 1 },
+  250: { name: "상품17", remaining: 1 },
+  265: { name: "상품18", remaining: 1 },
+  280: { name: "상품19", remaining: 1 },
+  295: { name: "상품20", remaining: 1 },
+  300: { name: "상품21", remaining: 1 },
 };
 
 const DEFAULT_HERO = {
@@ -849,6 +864,189 @@ function getAvailableKujiIndexes() {
   return available;
 }
 
+function isPrizeNumber(num) {
+  return !!(PRIZES && Object.prototype.hasOwnProperty.call(PRIZES, num));
+}
+
+function getCurrentPrizeHitCount() {
+  return state.history.reduce((count, h) => {
+    return count + (isPrizeNumber(h.number) ? 1 : 0);
+  }, 0);
+}
+
+function getTotalPrizeCountOnBoard() {
+  return state.assignments.reduce((count, num) => {
+    return count + (isPrizeNumber(num) ? 1 : 0);
+  }, 0);
+}
+
+function getPrizeWeightByNumber(num) {
+  const n = Number(num);
+  if (!Number.isFinite(n)) return 1;
+
+  return Math.max(1, Math.floor(n / 11));
+}
+
+function pickWeightedPrizeIndex(prizeIndexes) {
+  if (!prizeIndexes || prizeIndexes.length === 0) return null;
+
+  let totalWeight = 0;
+  const weightedList = [];
+
+  for (const idx of prizeIndexes) {
+    const num = state.assignments[idx];
+    const weight = getPrizeWeightByNumber(num);
+
+    weightedList.push({ idx, weight });
+    totalWeight += weight;
+  }
+
+  let r = Math.random() * totalWeight;
+
+  for (const item of weightedList) {
+    r -= item.weight;
+    if (r < 0) return item.idx;
+  }
+
+  return weightedList[weightedList.length - 1].idx;
+}
+
+function chooseWeightedSlotPickIndex(availableIndexes) {
+  if (!availableIndexes || availableIndexes.length === 0) return null;
+
+  const prizeIndexes = [];
+  const nonPrizeIndexes = [];
+
+  for (const idx of availableIndexes) {
+    const num = state.assignments[idx];
+    if (isPrizeNumber(num)) {
+      prizeIndexes.push(idx);
+    } else {
+      nonPrizeIndexes.push(idx);
+    }
+  }
+
+  // 보드 전체 기준 목표 당첨 수
+  const totalPrizeCountOnBoard = getTotalPrizeCountOnBoard();
+  const targetTotalWins = Math.min(
+    Math.floor(state.total / SLOT_TARGET_ONE_PER),
+    totalPrizeCountOnBoard,
+  );
+
+  const currentWins = getCurrentPrizeHitCount();
+  const remainingDraws = availableIndexes.length;
+  const remainingNeededWins = Math.max(0, targetTotalWins - currentWins);
+
+  // 예: 남은 60장 중 앞으로 2번은 당첨이 나와야 하면 이번 당첨 확률 = 2/60
+  const winChanceNow =
+    remainingDraws > 0 ? remainingNeededWins / remainingDraws : 0;
+
+  // 당첨 후보가 아예 없으면 무조건 꽝
+  if (prizeIndexes.length === 0) {
+    return nonPrizeIndexes[Math.floor(Math.random() * nonPrizeIndexes.length)];
+  }
+
+  // 꽝 후보가 아예 없으면 무조건 당첨
+  if (nonPrizeIndexes.length === 0) {
+    return prizeIndexes[Math.floor(Math.random() * prizeIndexes.length)];
+  }
+
+  const shouldPickPrize = Math.random() < winChanceNow;
+
+  if (shouldPickPrize) {
+    return pickWeightedPrizeIndex(prizeIndexes);
+  }
+
+  return nonPrizeIndexes[Math.floor(Math.random() * nonPrizeIndexes.length)];
+}
+
+function chooseCardPickCandidatesWithQuota(availableIndexes, pickCount = 3) {
+  if (!availableIndexes || availableIndexes.length === 0) return [];
+
+  const actualPickCount = Math.min(pickCount, availableIndexes.length);
+
+  const prizeIndexes = [];
+  const nonPrizeIndexes = [];
+
+  for (const idx of availableIndexes) {
+    const num = state.assignments[idx];
+    if (isPrizeNumber(num)) {
+      prizeIndexes.push(idx);
+    } else {
+      nonPrizeIndexes.push(idx);
+    }
+  }
+
+  const totalPrizeCountOnBoard = getTotalPrizeCountOnBoard();
+  const targetTotalWins = Math.min(
+    Math.floor(state.total / SLOT_TARGET_ONE_PER),
+    totalPrizeCountOnBoard,
+  );
+
+  const currentWins = getCurrentPrizeHitCount();
+  const remainingNeededWins = Math.max(0, targetTotalWins - currentWins);
+  const remainingDraws = availableIndexes.length;
+
+  const winChancePerCard =
+    remainingDraws > 0 ? remainingNeededWins / remainingDraws : 0;
+
+  let winCountThisPick = 0;
+  for (let i = 0; i < actualPickCount; i++) {
+    if (Math.random() < winChancePerCard) {
+      winCountThisPick++;
+    }
+  }
+
+  winCountThisPick = Math.min(
+    winCountThisPick,
+    remainingNeededWins,
+    prizeIndexes.length,
+  );
+
+  const result = [];
+
+  const tempPrizeIndexes = [...prizeIndexes];
+  for (let i = 0; i < winCountThisPick; i++) {
+    const picked = pickWeightedPrizeIndex(tempPrizeIndexes);
+    if (picked == null) break;
+
+    result.push(picked);
+
+    const removeAt = tempPrizeIndexes.indexOf(picked);
+    if (removeAt >= 0) tempPrizeIndexes.splice(removeAt, 1);
+  }
+
+  const tempNonPrizeIndexes = [...nonPrizeIndexes];
+  shuffle(tempNonPrizeIndexes);
+
+  const needMore = actualPickCount - result.length;
+  result.push(...tempNonPrizeIndexes.slice(0, needMore));
+
+  if (result.length < actualPickCount) {
+    const leftovers = availableIndexes.filter((idx) => !result.includes(idx));
+    shuffle(leftovers);
+    result.push(...leftovers.slice(0, actualPickCount - result.length));
+  }
+
+  shuffle(result);
+  return result;
+}
+
+function buildCardRandomPickCandidates(availableIndexes, pickCount = 3) {
+  if (!availableIndexes || availableIndexes.length === 0) return [];
+
+  const finalIndex = chooseWeightedSlotPickIndex(availableIndexes);
+  if (finalIndex === null) return [];
+
+  const rest = availableIndexes.filter((idx) => idx !== finalIndex);
+  shuffle(rest);
+
+  const result = [finalIndex, ...rest.slice(0, Math.max(0, pickCount - 1))];
+  shuffle(result); // 사용자가 어느 카드가 정답인지 모르게 한 번 더 섞기
+
+  return result;
+}
+
 async function startShuffleAndShowCards() {
   if (isShuffleRunning) return;
 
@@ -882,10 +1080,11 @@ async function startShuffleAndShowCards() {
   isFromPickMode = false;
   currentOpeningIndex = null;
 
-  currentPickCandidates = shuffledDeckIndexes.slice(
-    0,
-    Math.min(3, shuffledDeckIndexes.length),
+  currentPickCandidates = chooseCardPickCandidatesWithQuota(
+    availableIndexes,
+    3,
   );
+
   renderPickCards(currentPickCandidates);
 
   if (currentPickCandidates.length > 0) {
@@ -1001,8 +1200,12 @@ async function startSlotMachinePick() {
 
   isSlotMachineRunning = true;
 
-  const finalIndex =
-    availableIndexes[Math.floor(Math.random() * availableIndexes.length)];
+  const finalIndex = chooseWeightedSlotPickIndex(availableIndexes);
+  if (finalIndex === null) {
+    isSlotMachineRunning = false;
+    showAlert("남은 쿠지가 없습니다!");
+    return;
+  }
   const finalPos = indexToKujiPos(finalIndex);
   const [finalRow, finalCol] = finalPos.split("-");
 
