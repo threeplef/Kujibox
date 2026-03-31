@@ -2,7 +2,7 @@
  * CONFIG (원하는 대로 수정)
  ***********************/
 const DEFAULT_TOTAL = 300;
-const SLOT_TARGET_ONE_PER = 30; // 슬롯픽 당첨 목표: 30장당 1번
+const SLOT_TARGET_ONE_PER = 25; // 슬롯픽 당첨 목표: 30장당 1번
 
 // "번호"에 대응되는 상품 목록(예시). 필요하면 마음대로 수정하세요.
 // - key: 번호(문자열/숫자)
