@@ -163,7 +163,7 @@ const totalInputEl = document.getElementById("totalInput");
 const btnRebuildEl = document.getElementById("btnRebuild");
 
 const btnToggleHistoryEl = document.getElementById("btnToggleHistory");
-// const historyPanelEl = document.querySelector(".history-panel");
+const btnOpenAllRemainingEl = document.getElementById("btnOpenAllRemaining");
 
 // History modal
 const historyModalEl = document.getElementById("historyModal");
@@ -548,6 +548,8 @@ btnToggleHistoryEl.addEventListener("click", () => {
   openHistoryModal();
 });
 
+btnOpenAllRemainingEl?.addEventListener("click", openAllRemainingKujis);
+
 btnCloseHistoryModalEl.addEventListener("click", closeHistoryModal);
 
 // 다운로드도 모달 버튼에서 가능하게
@@ -709,6 +711,46 @@ function removeFromQueue(index) {
   saveState();
   renderAll();
   showToast(`${removedName}님이 대기줄에서 빠졌어요.`);
+}
+
+async function openAllRemainingKujis() {
+  if (!state.sessionName) {
+    showAlert("이름 입력 후 Enter(또는 시작)를 눌러 기록을 시작해 주세요.");
+    nameInputEl.focus();
+    return;
+  }
+
+  const availableIndexes = getAvailableKujiIndexes();
+  if (availableIndexes.length === 0) {
+    showAlert("남은 쿠지가 없습니다!");
+    return;
+  }
+
+  const ok = await showConfirm(
+    `남은 쿠지 ${availableIndexes.length}장을 모두 오픈할까요?\n이 작업은 되돌릴 수 없습니다.`,
+  );
+  if (!ok) return;
+
+  const now = Date.now();
+
+  for (let i = 0; i < availableIndexes.length; i++) {
+    const index = availableIndexes[i];
+    if (state.opened[index]) continue;
+
+    state.opened[index] = true;
+
+    const revealedNumber = state.assignments[index];
+    state.history.unshift({
+      name: state.sessionName,
+      number: revealedNumber,
+      kujiIndex: index + 1,
+      tsISO: new Date(now + i).toISOString(),
+    });
+  }
+
+  saveState();
+  renderAll();
+  showToast(`남은 쿠지 ${availableIndexes.length}장을 모두 오픈했어요.`);
 }
 
 function getPrizeEntries() {

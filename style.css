@@ -292,6 +292,12 @@ tbody td {
   margin-bottom: 10px;
 }
 
+#btnOpenAllRemaining {
+  background: #ff3f87;
+  color: #fff;
+  border: none;
+}
+
 #currentNameBadge {
   background: #fff4f8;
   border: 1px solid #ffc7db;
