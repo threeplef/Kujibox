@@ -2,7 +2,7 @@
  * CONFIG (원하는 대로 수정)
  ***********************/
 const DEFAULT_TOTAL = 300;
-const SLOT_TARGET_ONE_PER = 17; // 슬롯픽 당첨 목표: 30장당 1번
+const SLOT_TARGET_ONE_PER = 16; // 슬롯픽 당첨 목표: 17장당 1번
 
 // "번호"에 대응되는 상품 목록(예시). 필요하면 마음대로 수정하세요.
 // - key: 번호(문자열/숫자)
@@ -970,34 +970,12 @@ function getTotalPrizeCountOnBoard() {
 }
 
 function getPrizeWeightByNumber(num) {
-  const n = Number(num);
-  if (!Number.isFinite(n)) return 1;
-
-  return Math.max(1, Math.floor(n / 11));
+  return 1;
 }
 
 function pickWeightedPrizeIndex(prizeIndexes) {
   if (!prizeIndexes || prizeIndexes.length === 0) return null;
-
-  let totalWeight = 0;
-  const weightedList = [];
-
-  for (const idx of prizeIndexes) {
-    const num = state.assignments[idx];
-    const weight = getPrizeWeightByNumber(num);
-
-    weightedList.push({ idx, weight });
-    totalWeight += weight;
-  }
-
-  let r = Math.random() * totalWeight;
-
-  for (const item of weightedList) {
-    r -= item.weight;
-    if (r < 0) return item.idx;
-  }
-
-  return weightedList[weightedList.length - 1].idx;
+  return prizeIndexes[Math.floor(Math.random() * prizeIndexes.length)];
 }
 
 function chooseWeightedSlotPickIndex(availableIndexes) {
