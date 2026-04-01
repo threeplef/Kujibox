@@ -943,7 +943,7 @@ input[type="number"]:focus {
   border-radius: 12px;
   /* border: 1px solid #cfcfd6; */
   border: none;
-  background-image: url("./images/kuji-under.png");
+  background-image: url("images/kuji-under.png");
   background-size: contain;
   background-repeat: no-repeat;
   background-position: center;
@@ -1327,7 +1327,7 @@ input[type="number"]:focus {
   /* p만큼 왼쪽을 잘라냄 → 왼쪽부터 사라지는 느낌 */
   clip-path: inset(0 0 0 calc(var(--p) * 100%));
   transition: clip-path 80ms linear;
-  background-image: url("./images/kuji.png");
+  background-image: url("images/kuji.png");
 }
 
 .kuji-open-sheet.dragging {

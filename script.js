@@ -12,7 +12,7 @@ const SLOT_TARGET_ONE_PER = 16; // 슬롯픽 당첨 목표: 17장당 1번
 const LS_KEY_PRIZES = "kuji_prizes";
 const LS_KEY_HERO = "kuji_hero";
 const LS_KEY_LOGO = "kuji_logo";
-const DEFAULT_LOGO = "./images/logo2.png";
+const DEFAULT_LOGO = "images/logo2.png";
 
 // 기본 상품 목록(기존 PRIZES 내용을 그대로 여기로 옮기세요)
 const DEFAULT_PRIZES = {
@@ -1535,10 +1535,10 @@ function showWinIfPrizeNumber(n) {
   // 이미지: 기존 helper로 idb:// / 경로 / 파일명 모두 지원
   if (winPrizeImgEl) {
     // fallback은 번호 기본 이미지
-    setImgSrcAsync(winPrizeImgEl, prize?.img, `./images/${n}.png`);
+    setImgSrcAsync(winPrizeImgEl, prize?.img, `images/${n}.png`);
     winPrizeImgEl.onerror = () => {
       winPrizeImgEl.onerror = null;
-      winPrizeImgEl.src = "./images/placeholder.png";
+      winPrizeImgEl.src = "images/placeholder.png";
     };
   }
 
@@ -2171,12 +2171,12 @@ function createPrizeCard(
   thumb.className = "prize-thumb";
 
   const img = document.createElement("img");
-  setImgSrcAsync(img, item.img, `./images/${num}.png`);
+  setImgSrcAsync(img, item.img, `images/${num}.png`);
   img.alt = item.name;
 
   img.onerror = () => {
     img.onerror = null;
-    img.src = "./images/placeholder.png";
+    img.src = "images/placeholder.png";
   };
 
   thumb.appendChild(img);
@@ -2197,7 +2197,7 @@ function createPrizeCard(
 
     const bg = document.createElement("img");
     bg.className = "prize-num-bg";
-    bg.src = hits > 0 ? "./images/winning.png" : "./images/prize.png";
+    bg.src = hits > 0 ? "images/winning.png" : "images/prize.png";
     bg.alt = hits > 0 ? "winning" : "prize";
 
     const txt = document.createElement("div");
@@ -2280,7 +2280,7 @@ function applyHeroToUI() {
   if (!heroImg) return;
 
   // ✅ HERO도 IndexedDB(idb://...) 지원
-  setImgSrcAsync(heroImg, HERO?.img, "./images/lo.png");
+  setImgSrcAsync(heroImg, HERO?.img, "images/lo.png");
 }
 
 function applyLogoToUI() {
@@ -2394,7 +2394,7 @@ function saveSettingsAndApply() {
   } catch (e) {
     // ✅ 이미지(DataURL) 누적 등으로 localStorage 용량을 넘기면 여기로 옴
     showAlert(
-      "저장이 실패했어요(브라우저 저장공간이 가득 찼을 가능성이 커요).\n\n해결 방법:\n1) 상품 이미지들은 파일로 '업로드(파일 선택)' 대신 ./images/폴더 경로로 넣기\n2) 또는 이미지 용량을 더 줄여서 다시 선택하기(현재는 자동 압축을 적용했지만, 아주 큰 이미지가 많으면 한계가 있어요).",
+      "저장이 실패했어요(브라우저 저장공간이 가득 찼을 가능성이 커요).\n\n해결 방법:\n1) 상품 이미지들은 파일로 '업로드(파일 선택)' 대신 images/폴더 경로로 넣기\n2) 또는 이미지 용량을 더 줄여서 다시 선택하기(현재는 자동 압축을 적용했지만, 아주 큰 이미지가 많으면 한계가 있어요).",
     );
     return;
   }
@@ -2938,14 +2938,13 @@ async function resolveImgSrc(imgRef, fallback) {
     return raw;
   }
 
-  return `./images/${raw}`;
+  return `images/${raw}`;
 }
 
 function setImgSrcAsync(imgEl, imgRef, fallback) {
   if (!imgEl) return;
 
-  const safeFallback =
-    normalizeImageRef(fallback) || "./images/placeholder.png";
+  const safeFallback = normalizeImageRef(fallback) || "images/placeholder.png";
 
   resolveImgSrc(imgRef, safeFallback)
     .then((src) => {
@@ -2977,7 +2976,7 @@ async function preloadStoredImages() {
     .map((ref) => normalizeImageRef(ref))
     .filter((ref) => typeof ref === "string" && ref.startsWith("idb://"))
     .map((ref) =>
-      resolveImgSrc(ref, "./images/placeholder.png").catch(() => null),
+      resolveImgSrc(ref, "images/placeholder.png").catch(() => null),
     );
 
   await Promise.all(jobs);
